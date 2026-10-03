@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Deputado Federal 2026 · quem estaria eleito agora</title>
+<meta name="description" content="Projeção não oficial, em tempo real, de quem estaria eleito deputado federal se a apuração terminasse agora: quociente eleitoral, quociente partidário, sobras e a fila das legendas, calculados a partir dos dados públicos do TSE.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..125,400..800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#16243A; --ink-2:#3A4A63; --mute:#6B7686; --line:#DCE1E8; --panel:#F2F4F7; --paper:#FFFFFF;
+  --verde:#1E8A5A; --verde-bg:#E3F3EA; --ambar:#C9841C; --ambar-bg:#FBF0DA; --vinho:#A8403A; --vinho-bg:#F8E5E3;
+  --dest:#FFF3C4; --lab:220px; --val:92px;
+}
+*{box-sizing:border-box}
+html{font-family:"Archivo",system-ui,sans-serif;font-variant-numeric:tabular-nums;color:var(--ink);background:var(--paper)}
+body{margin:0;line-height:1.4}
+a{color:var(--ink)}
+button,select{font:inherit}
+.wrap{max-width:1240px;margin:0 auto;padding:0 20px}
+
+/* cabeçalho */
+header{border-bottom:1px solid var(--line);background:var(--paper);position:sticky;top:0;z-index:5}
+.top{display:flex;flex-wrap:wrap;gap:10px 24px;align-items:center;padding:12px 0}
+.marca{font-weight:800;font-stretch:90%;font-size:18px;letter-spacing:-.01em;margin-right:auto}
+.marca small{display:block;font-weight:400;font-stretch:100%;font-size:12px;color:var(--mute)}
+.ctl{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.ctl label{font-size:13px;color:var(--mute)}
+select{padding:6px 8px;border:1px solid var(--line);border-radius:6px;background:var(--paper);color:var(--ink);max-width:260px}
+.btn{padding:6px 12px;border:1px solid var(--ink);border-radius:6px;background:var(--paper);color:var(--ink);cursor:pointer}
+.btn:hover{background:var(--panel)}
+.btn.q{border-color:var(--line);color:var(--ink-2)}
+.st{font-size:12px;color:var(--mute);width:100%}
+.st.busy{color:var(--ambar)}.st.erro{color:var(--vinho)}
+
+/* herói */
+.hero{padding:28px 0 8px}
+.hero h1{margin:0;font-size:clamp(30px,5vw,52px);font-weight:800;font-stretch:85%;letter-spacing:-.02em;line-height:1}
+.hero h1 #uf-vagas{font-weight:400;font-stretch:100%;font-size:.45em;color:var(--mute);margin-left:.4em;letter-spacing:0}
+.hero p.sub{margin:8px 0 0;max-width:70ch;color:var(--ink-2);font-size:15px}
+.kpis{display:flex;flex-wrap:wrap;gap:6px 28px;margin:18px 0 6px}
+.kpi span{display:block;font-size:12px;color:var(--mute)}
+.kpi b{font-size:20px;font-weight:600}
+
+/* gráfico da linha de corte */
+.grafico{margin:10px 0 26px}
+.gwrap{position:relative;padding:28px 0 6px}
+.corte{position:absolute;top:0;bottom:0;width:0;border-left:2px dashed var(--ink);pointer-events:none}
+.corte span{position:absolute;top:0;left:6px;white-space:nowrap;font-size:12px;color:var(--ink);background:var(--paper);padding:1px 4px}
+.corte.dir span{left:auto;right:6px}
+.barra{display:grid;grid-template-columns:var(--lab) 1fr;gap:0 10px;align-items:center;padding:5px 0;border-top:1px solid var(--line)}
+.barra:first-of-type{border-top:0}
+.bl{display:flex;justify-content:space-between;gap:8px;font-size:14px;min-width:0}
+.bl b{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bl em{font-style:normal;color:var(--mute);font-size:12px;white-space:nowrap}
+.bt{position:relative;height:18px;background:var(--panel);border-radius:3px;overflow:visible;margin-right:var(--val)}
+.gwrap{--gap:10px}
+.bf{height:100%;border-radius:3px;background:var(--verde)}
+.sem20 .bf{background:var(--ambar)}
+.fora .bf{background:#B9C2CE}
+.bv{position:absolute;left:100%;top:0;line-height:18px;padding-left:8px;font-size:13px;white-space:nowrap}
+.bn{grid-column:2;font-size:12px;color:var(--mute);margin-top:2px}
+.fora .bn{color:var(--vinho)}
+.barra.dest{background:var(--dest)}
+.leg{display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:var(--mute);margin-top:10px}
+.leg i{display:inline-block;width:12px;height:12px;border-radius:2px;vertical-align:-2px;margin-right:4px}
+
+/* seções */
+section{margin:0 0 28px}
+section h2{font-size:17px;font-weight:700;margin:0 0 8px;display:flex;align-items:baseline;gap:10px}
+section h2 small{font-weight:400;color:var(--mute);font-size:13px}
+.tw{overflow-x:auto;border:1px solid var(--line);border-radius:6px}
+table{border-collapse:collapse;width:100%;font-size:13.5px}
+th,td{padding:6px 8px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+th{background:var(--panel);font-weight:600;color:var(--ink-2);position:sticky;top:0}
+td.l,th.l{text-align:left}
+td small{color:var(--mute);font-size:12px}
+tr:last-child td{border-bottom:0}
+tr.dest td{background:var(--dest)}
+tr.fraca td{color:var(--mute)}
+.tag{display:inline-block;padding:1px 7px;border-radius:10px;font-size:12px;font-weight:600}
+.tag.qp{background:var(--verde-bg);color:var(--verde)}
+.tag.sobra{background:var(--ambar-bg);color:var(--ambar)}
+.tag.art{background:var(--vinho-bg);color:var(--vinho)}
+.tag.nao{background:var(--panel);color:var(--mute);font-weight:400}
+.vazio{color:var(--mute);font-size:14px;margin:4px 0}
+.aviso{background:var(--vinho-bg);color:var(--vinho);padding:8px 12px;border-radius:6px;font-size:14px;margin:0 0 8px}
+.explica{font-size:13px;color:var(--mute);max-width:90ch;margin:8px 0 0}
+details.regras{margin:20px 0}
+details.regras summary{cursor:pointer;font-weight:600}
+details.regras p{max-width:80ch;font-size:14px;color:var(--ink-2)}
+footer{border-top:1px solid var(--line);padding:18px 0 40px;font-size:13px;color:var(--mute);max-width:90ch}
+
+@media (max-width:720px){
+  :root{--lab:120px;--val:70px}
+  header{position:static}
+  section h2{display:block}section h2 small{display:block;margin-top:2px}
+  .marca{width:100%}
+  .bl{flex-direction:column;gap:0}
+  .hero h1 #uf-vagas{display:block;margin:6px 0 0}
+  .kpi b{font-size:17px}
+}
+@media (prefers-reduced-motion:no-preference){.bf{transition:width .5s ease}}
+:focus-visible{outline:2px solid var(--ambar);outline-offset:2px}
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap top">
+    <div class="marca">Quem estaria eleito agora<small>Deputado Federal 2026 · projeção não oficial a partir dos dados do TSE</small></div>
+    <div class="ctl">
+      <label for="uf">Estado</label><select id="uf"></select>
+      <label for="partido">Destacar</label><select id="partido"><option value="">— nenhum —</option></select>
+      <button class="btn q" id="atualizar" type="button">Atualizar</button>
+      <button class="btn q" id="baixar" type="button">Baixar CSV</button>
+      <a class="btn q" id="ver-geral" href="#geral">Todos os estados</a>
+    </div>
+    <div class="st" id="status">carregando…</div>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="hero">
+    <h1><span id="uf-nome">São Paulo</span><span id="uf-vagas"></span></h1>
+    <p class="sub">Se a apuração parasse neste instante, as cadeiras seriam distribuídas assim. A ordem muda enquanto as urnas entram — considere estável só acima de ~90% das seções totalizadas. Eleição: <span id="eleicao-nome">—</span>.</p>
+    <div class="kpis" id="kpis"></div>
+  </div>
+
+  <section id="geral-sec" hidden>
+    <h2>Todos os estados <small>cadeiras por legenda se terminasse agora</small></h2>
+    <div id="geral"></div>
+  </section>
+
+  <div id="avisos"></div>
+
+  <section>
+    <h2>Quem está na disputa pela próxima vaga <small>média de cada legenda = votos ÷ (cadeiras + 1)</small></h2>
+    <div class="grafico" id="grafico"></div>
+    <div class="leg"><span><i style="background:var(--verde)"></i>apta às sobras (≥80% do QE e candidato com ≥20%)</span><span><i style="background:var(--ambar)"></i>≥80% do QE, mas sem candidato com 20%</span><span><i style="background:#B9C2CE"></i>abaixo de 80% do QE</span></div>
+    <p class="explica">A linha tracejada é a média que levou a última cadeira das sobras. Quem está à direita dela já tem vaga; quem está à esquerda precisa dos votos indicados para ultrapassá-la.</p>
+  </section>
+
+  <section id="destaque-sec" hidden>
+    <h2>Candidatos de <span id="destaque-nome"></span></h2>
+    <div id="destaque"></div>
+  </section>
+
+  <section>
+    <h2>Eleitos se terminasse agora <small id="eleitos-n"></small></h2>
+    <div id="eleitos"></div>
+  </section>
+
+  <section>
+    <h2>Situação de cada legenda</h2>
+    <div id="legendas"></div>
+    <p class="explica">Faltam p/ +1 QP: votos para ganhar mais uma cadeira pelo quociente partidário. Faltam p/ tomar vaga: votos para a média da legenda superar a da última cadeira distribuída (já contando o piso de 80% do QE). Faltam p/ cand. 20%: votos que faltam ao melhor candidato não eleito para chegar a 20% do QE, condição para disputar sobras.</p>
+  </section>
+
+  <section>
+    <h2>Rodadas das sobras <small>maior média, uma cadeira por rodada</small></h2>
+    <div id="rodadas"></div>
+  </section>
+
+  <section>
+    <h2>Primeiros suplentes de cada legenda</h2>
+    <div id="suplentes"></div>
+  </section>
+
+  <details class="regras">
+    <summary>Como o cálculo é feito</summary>
+    <p>Quociente eleitoral (QE) = votos válidos ÷ cadeiras do estado (fração acima de 0,5 arredonda para cima). Cada legenda — partido isolado ou federação — ganha pelo quociente partidário tantas cadeiras quantas vezes o QE couber na sua votação (nominais + legenda), ocupadas por candidatos com pelo menos 10% do QE.</p>
+    <p>As cadeiras restantes vão, uma a uma, para a legenda com a maior média (votos ÷ cadeiras já obtidas + 1), desde que tenha pelo menos 80% do QE e um candidato com 20% do QE (Lei 14.211/2021). Se nenhuma cumprir os dois requisitos, concorrem as que atingiram o QE com candidato a 10%. Se nenhuma legenda atingir o QE, elegem-se os mais votados (art. 111 do Código Eleitoral).</p>
+    <p>Os dados vêm dos arquivos públicos de totalização do TSE (resultados.tse.jus.br), lidos diretamente pelo seu navegador a cada 60 segundos. Candidatos com votação sub judice são computados como o TSE os publica. Esta página não tem vínculo com o TSE nem com partido algum; o resultado oficial é o do TSE.</p>
+  </details>
+</main>
+
+<footer class="wrap">
+  Projeção automática, sem revisão humana, para acompanhar a apuração. Resultado oficial, diplomação e eventuais substituições: Tribunal Superior Eleitoral.
+</footer>
+
+<script src="motor.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
