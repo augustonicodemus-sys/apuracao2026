@@ -193,7 +193,7 @@
       for (const L of Object.values(res.legendas)) for (const c of L.candidatos) if (ehDest(c.partido)) cs.push(c);
       cs.sort((a, b) => b.votos - a.votos);
       $("#destaque-nome").textContent = destaque;
-      $("#destaque").innerHTML = cs.length ? tabela(["Candidato", "Nº", "Votos", "% do QE", "Apto a", "Situação"],
+      $("#destaque").innerHTML = cs.length ? tabela(["Candidato", "Nº", "Votos", "% do QE", "Apto a", "Situação projetada"],
         cs.map((c) => [esc(c.nome), c.numero, fmt(c.votos), pct(c.votos / qe), c.votos >= res.piso20 ? "20%" : (c.votos >= res.piso10 ? "10%" : "não"), c.eleito ? tag(c.eleito) : '<span class="tag nao">não eleito</span>']), [0, 5]) : `<p class="vazio">${esc(destaque)} não tem candidatos em ${NOMES[uf]}.</p>`;
       dsec.hidden = false;
     } else dsec.hidden = true;
@@ -299,7 +299,7 @@
       linhas.push([`<a href="?uf=${r.u}${destaque ? "&partido=" + encodeURIComponent(destaque) : ""}${window.Sim && Sim.ativo ? "&sim=" + Sim.pct : ""}">${r.u}</a> <small>${NOMES[r.u]}</small>`, r.d.pst ? r.d.pst + "%" : "–", fmt(r.res.validos), fmt(r.res.qe), `${r.res.eleitos.length}/${r.res.vagas}`, top || "–", dl || "–"]);
       classes.push("");
     }
-    alvo.innerHTML = nac + '<h3 class="sub3">Por estado</h3>' + tabela(["UF", "Seções", "Válidos", "QE", "Eleitos", "Cadeiras por legenda (agora)", destaque ? esc(destaque) : "Partido destacado"], linhas, [0, 5, 6], classes);
+    alvo.innerHTML = nac + '<h3 class="sub3">Por estado</h3>' + tabela(["UF", "Seções", "Válidos", "QE", "Eleitos projetados", "Cadeiras por legenda (projeção)", destaque ? esc(destaque) : "Partido destacado"], linhas, [0, 5, 6], classes);
   }
 
   // ------------------------------------------------------------ eventos

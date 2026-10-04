@@ -76,7 +76,7 @@
     const gar = new Set(a.garantidos);
     const linhas = a.ordem.map((c, i) => {
       const dentro = i < vagas && c.votos > 0;
-      const tag = gar.has(c) ? '<span class="tag ok">garantido</span>' : (dentro && PAG === "senado" ? '<span class="tag agora">eleito agora</span>' : "");
+      const tag = gar.has(c) ? '<span class="tag ok">garantido</span>' : (dentro && PAG === "senado" ? '<span class="tag agora">eleito projetado</span>' : "");
       return `<div class="cb ${dentro ? "in" : ""}"><div class="cn">${dot(c.partido)}<b>${esc(c.urna)}</b> <small>${esc(sigla(c.partido))} · ${c.numero}</small> ${tag}</div>
         <div class="ct"><div class="cf" style="width:${(c.votos / v / escala * 100).toFixed(2)}%;background:${cor(c.partido)}"></div></div>
         <div class="cv"><b>${pct(c.votos / v)}</b> <small>${fmt(c.votos)}</small></div></div>`;
@@ -145,7 +145,7 @@
       const c = (k) => k && d.vv ? `${dot(k.partido)}${esc(k.urna)} <small>${esc(sigla(k.partido))} · ${pct(k.votos / d.vv)}</small>` : (k ? `${dot(k.partido)}${esc(k.urna)} <small>${esc(sigla(k.partido))}</small>` : "–");
       return `<tr class="${u === ufDet ? "sel" : ""}"><td class="l"><a href="?uf=${u}${simQ()}#detalhe"><b>${u}</b></a> <small>${T.NOMES[u]}</small></td><td>${d.pst || "–"}%</td><td class="l">${c(p1)}</td><td class="l">${c(p2)}</td><td class="l">${d.vv ? situTag(a) : "–"}</td><td><a href="?uf=${u}${simQ()}#detalhe">detalhar</a></td></tr>`;
     }).join("");
-    $("#estados").innerHTML = `<table><thead><tr><th class="l">Estado</th><th>Seções</th><th class="l">1º colocado</th><th class="l">2º colocado</th><th class="l">Situação</th><th></th></tr></thead><tbody>${linhas}</tbody></table>`;
+    $("#estados").innerHTML = `<table><thead><tr><th class="l">Estado</th><th>Seções</th><th class="l">1º colocado</th><th class="l">2º colocado</th><th class="l">Situação projetada</th><th></th></tr></thead><tbody>${linhas}</tbody></table>`;
     const pp = Object.entries(porPartido).sort((a, b) => b[1].lid - a[1].lid || a[0].localeCompare(b[0]));
     $("#partidos").innerHTML = pp.length ? `<table><thead><tr><th class="l">Partido</th><th title="Estados em que o partido lidera agora">Lidera</th><th title="Eleito no 1º turno de forma garantida">Garantidos</th></tr></thead><tbody>` +
       pp.map(([p, x]) => `<tr><td class="l">${dot(p)}<b>${esc(sigla(p))}</b></td><td>${x.lid}</td><td>${x.el || "–"}</td></tr>`).join("") + `</tbody></table>` : '<p class="vazio">Sem votos apurados ainda.</p>';
@@ -181,7 +181,7 @@
     $("#nota-camara").textContent = !comVotos ? "A apuração ainda não começou: o hemiciclo mostra a bancada atual." : "Contorno escuro: senadores eleitos em 2022, com mandato até 2031.";
     const linhasP = Object.values(tab).sort((a, b) => (b.cont + b.agora) - (a.cont + a.agora) || b.atual - a.atual || a.p.localeCompare(b.p));
     const tot = (k) => linhasP.reduce((s, x) => s + x[k], 0);
-    $("#partidos").innerHTML = `<table><thead><tr><th class="l">Partido</th><th title="Senadores em exercício hoje">Atual</th><th title="Eleitos em 2022, mandato até 2031">Continuam</th><th title="Lideram agora nas 54 vagas em disputa">Eleitos agora</th><th title="Continuam + eleitos agora">Total</th><th title="Continuam + vagas já garantidas">Garant.</th></tr></thead><tbody>` +
+    $("#partidos").innerHTML = `<table><thead><tr><th class="l">Partido</th><th title="Senadores em exercício hoje">Atual</th><th title="Eleitos em 2022, mandato até 2031">Continuam</th><th title="Lideram agora nas 54 vagas em disputa">Eleitos projetados</th><th title="Continuam + eleitos agora">Total</th><th title="Continuam + vagas já garantidas">Garant.</th></tr></thead><tbody>` +
       linhasP.map((x) => `<tr><td class="l">${dot(x.p)}<b>${esc(sigla(x.p))}</b></td><td>${x.atual || "–"}</td><td>${x.cont || "–"}</td><td>${x.agora || "–"}</td><td><b>${x.cont + x.agora || "–"}</b></td><td>${x.cont + x.gar || "–"}</td></tr>`).join("") +
       `</tbody><tfoot><tr><td class="l">Total</td><td>${tot("atual")}</td><td>${tot("cont")}</td><td>${tot("agora")}</td><td>${tot("cont") + tot("agora")}</td><td>${tot("cont") + tot("gar")}</td></tr></tfoot></table>`;
     const linhas = R.ufs.map(({ u, d, erro }) => {
