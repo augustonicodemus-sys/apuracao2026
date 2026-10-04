@@ -8,6 +8,7 @@
   const params = new URLSearchParams(location.search);
   const ufDet = (params.get("uf") || "").toUpperCase();
   let eleicao = null, nomeEleicao = "", timer = null, modo = null, ultimo = null;
+  let ufSel = PAG === "presidente" && T.NOMES[ufDet] ? ufDet : ""; // presidente: "" = Brasil, ou a UF escolhida
 
   const $ = (s) => document.querySelector(s);
   const fmt = M.fmt;
@@ -105,23 +106,64 @@
   // ------------------------------------------------------------ páginas
   function render(R) { ({ presidente: renderPresidente, governadores: renderGovernadores, senado: renderSenado })[PAG](R); }
 
+  function seletorUf() { // presidente: escolher Brasil ou um estado para o gráfico de cima
+    const sel = $("#uf-sel");
+    if (!sel || sel.dataset.pronto) return;
+    sel.dataset.pronto = "1";
+    sel.innerHTML = '<option value="">Brasil</option>' + T.UFS.filter((u) => u !== "BR" && T.NOMES[u]).map((u) => `<option value="${u}">${u} · ${T.NOMES[u]}</option>`).join("");
+    sel.value = ufSel;
+    sel.addEventListener("change", () => escolherUf(sel.value, false));
+    $("#estados").addEventListener("click", (ev) => {
+      const tr = ev.target.closest("tr[data-uf]");
+      if (tr) { ev.preventDefault(); escolherUf(tr.dataset.uf, true); }
+    });
+  }
+  function escolherUf(u, rolar) {
+    ufSel = T.NOMES[u] ? u : "";
+    const sel = $("#uf-sel"); if (sel) sel.value = ufSel;
+    const q = new URLSearchParams(location.search);
+    if (ufSel) q.set("uf", ufSel); else q.delete("uf");
+    history.replaceState(null, "", location.pathname + (q.toString() ? "?" + q : ""));
+    if (ultimo) render(ultimo);
+    if (rolar) $("#painel-cand").scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
   function renderPresidente(R) {
-    const d = R.br;
-    if (!d) { $("#principal").innerHTML = '<p class="aviso">Sem dados nacionais do TSE agora.</p>'; return; }
-    const a = analisar(d, 1, true);
-    $("#k-secoes").textContent = d.pst ? d.pst + "%" : "–";
-    $("#k-validos").textContent = fmt(d.vv);
-    $("#k-situ").innerHTML = d.vv ? situTag(a) + (a.ordem[1] && /2º turno/.test(a.situacao) ? ` <small>${esc(a.ordem[0].urna)} × ${esc(a.ordem[1].urna)}</small>` : "") : "–";
-    $("#principal").innerHTML = d.vv ? barras(d, a, 1, true) + `<p class="nota">${restanteTxt(d)}. Para vencer no 1º turno é preciso mais da metade dos votos válidos. "Garantido" significa que nem todos os votos ainda não apurados mudariam o resultado.</p>`
-      : barras(d, { ...a, validos: 1 }, 0, false) + '<p class="nota">Sem votos apurados ainda. Os candidatos aparecem em ordem de votação quando a totalização começar.</p>';
+    seletorUf();
+    const xUf = ufSel ? R.ufs.find((y) => y.u === ufSel) : null;
+    const d = ufSel ? (xUf && !xUf.erro ? xUf.d : null) : R.br;
+    const onde = ufSel ? T.NOMES[ufSel] : "no Brasil";
+    $("#cand-sub").textContent = ufSel ? `% dos votos válidos em ${T.NOMES[ufSel]}` : "% dos votos válidos no Brasil";
+    $("#k-secoes-rot").textContent = ufSel ? `Seções totalizadas · ${ufSel}` : "Seções totalizadas";
+    $("#k-validos-rot").textContent = ufSel ? `Votos válidos · ${ufSel}` : "Votos válidos";
+    if (!d) {
+      $("#principal").innerHTML = `<p class="aviso">Sem dados do TSE ${ufSel ? "para " + onde : "nacionais"} agora.</p>`;
+      $("#k-secoes").textContent = "–"; $("#k-validos").textContent = "–";
+    } else {
+      const a = analisar(d, 1, true);
+      $("#k-secoes").textContent = d.pst ? d.pst + "%" : "–";
+      $("#k-validos").textContent = fmt(d.vv);
+      if (!ufSel) $("#k-situ").innerHTML = d.vv ? situTag(a) + (a.ordem[1] && /2º turno/.test(a.situacao) ? ` <small>${esc(a.ordem[0].urna)} × ${esc(a.ordem[1].urna)}</small>` : "") : "–";
+      const nota = ufSel
+        ? `<p class="nota">${restanteTxt(d)} em ${T.NOMES[ufSel]}. Resultado só deste estado: quem vence a eleição é decidido pelos votos válidos do Brasil inteiro. <a href="#" id="volta-br">Voltar para o Brasil</a></p>`
+        : `<p class="nota">${restanteTxt(d)}. Para vencer no 1º turno é preciso mais da metade dos votos válidos. "Garantido" significa que nem todos os votos ainda não apurados mudariam o resultado.</p>`;
+      const aa = ufSel ? { ...a, garantidos: [] } : a;
+      $("#principal").innerHTML = d.vv ? barras(d, aa, 1, !ufSel) + nota
+        : barras(d, { ...aa, validos: 1 }, 0, false) + '<p class="nota">Sem votos apurados ainda. Os candidatos aparecem em ordem de votação quando a totalização começar.</p>';
+      const vb = $("#volta-br"); if (vb) vb.addEventListener("click", (ev) => { ev.preventDefault(); escolherUf("", false); });
+    }
+    if (ufSel && R.br) { // situação nacional continua visível no cabeçalho
+      const an = analisar(R.br, 1, true);
+      $("#k-situ").innerHTML = R.br.vv ? situTag(an) + (an.ordem[1] && /2º turno/.test(an.situacao) ? ` <small>${esc(an.ordem[0].urna)} × ${esc(an.ordem[1].urna)} (Brasil)</small>` : "") : "–";
+    }
     // por estado
     const linhas = R.ufs.map(({ u, d: x, erro }) => {
       if (erro) return `<tr class="fraca"><td class="l">${u}</td><td colspan="4" class="l">${esc(erro)}</td></tr>`;
       const ax = analisar(x, 1, true), [p1, p2] = ax.ordem;
       const c = (k) => k && x.vv ? `${dot(k.partido)}${esc(k.urna)} <small>${pct(k.votos / x.vv)}</small>` : "–";
-      return `<tr><td class="l"><b>${u}</b> <small>${T.NOMES[u]}</small></td><td>${x.pst || "–"}%</td><td class="l">${c(p1)}</td><td class="l">${c(p2)}</td><td>${x.vv ? fmt(x.vv) : "–"}</td></tr>`;
+      return `<tr data-uf="${u}" class="clic${u === ufSel ? " sel" : ""}" title="Ver todos os candidatos em ${T.NOMES[u]}"><td class="l"><a href="?uf=${u}"><b>${u}</b></a> <small>${T.NOMES[u]}</small></td><td>${x.pst || "–"}%</td><td class="l">${c(p1)}</td><td class="l">${c(p2)}</td><td>${x.vv ? fmt(x.vv) : "–"}</td></tr>`;
     }).join("");
-    $("#estados").innerHTML = `<table><thead><tr><th class="l">Estado</th><th>Seções</th><th class="l">1º colocado</th><th class="l">2º colocado</th><th>Válidos</th></tr></thead><tbody>${linhas}</tbody></table>`;
+    $("#estados").innerHTML = `<table><thead><tr><th class="l">Estado</th><th>Seções</th><th class="l">1º colocado</th><th class="l">2º colocado</th><th>Válidos</th></tr></thead><tbody>${linhas}</tbody></table><p class="nota">Clique em um estado para ver todos os candidatos lá, no gráfico de cima.</p>`;
   }
 
   function renderGovernadores(R) {
