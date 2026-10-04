@@ -82,8 +82,8 @@
       rodada++;
       let aptas = Object.values(legendas).filter((L) => total(L) >= piso80 && proxApto(L, piso20));
       let regra = "80%QE + cand. 20%QE", pisoCand = piso20;
-      if (!aptas.length) { aptas = Object.values(legendas).filter((L) => total(L) >= qe && proxApto(L, piso10)); regra = "fallback: QE + cand. 10%QE"; pisoCand = piso10; }
-      if (!aptas.length) { aptas = Object.values(legendas).filter((L) => proxApto(L, 1)); regra = "fallback: qualquer legenda com candidato"; pisoCand = 1; }
+      // 3ª fase (STF, ADIs 7228/7263/7325): ninguém cumpre 80% + 20% -> todas as legendas, sem pisos, maior média
+      if (!aptas.length) { aptas = Object.values(legendas).filter((L) => proxApto(L, 0)); regra = "3ª fase (STF): todas as legendas"; pisoCand = 0; }
       if (!aptas.length) { avisos.push(`Restaram ${restantes} vaga(s) sem candidato disponível.`); break; }
       aptas.sort((A, B) => (total(B) / (B.cadeiras + 1)) - (total(A) / (A.cadeiras + 1)) || total(B) - total(A) || A.id.localeCompare(B.id));
       const venc = aptas[0], media = total(venc) / (venc.cadeiras + 1);
@@ -130,7 +130,79 @@
     return linhas;
   }
 
-  function fmt(n) { if (n == null) return "-"; return Math.round(n).toLocaleString("pt-BR"); }
+  /**
+   * Cadeiras matematicamente garantidas de cada legenda, dado um teto de votos ainda por apurar.
+   * Com mais R votos válidos o QE pode subir no máximo até QE(válidos + R); os votos da legenda e
+   * dos candidatos só aumentam. Logo a legenda tem garantidas floor(total / QEmax) cadeiras pelo
+   * quociente partidário, limitadas aos candidatos que já têm 10% de QEmax. Sem votos a apurar
+   * (restantes = 0) o resultado é o próprio cálculo final.
+   * Retorna { qeMax, porLegenda: {id: n}, total }.
+   */
+  function garantidas(res, restantes) {
+    const out = { qeMax: 0, porLegenda: {}, total: 0 };
+    if (!res.qe) return out;
+    const R = Math.max(0, Number(restantes) || 0);
+    if (R === 0) {
+      for (const L of Object.values(res.legendas)) if (L.cadeiras) { out.porLegenda[L.id] = L.cadeiras; out.total += L.cadeiras; }
+      out.qeMax = res.qe;
+      return out;
+    }
+    const qeMax = quocienteEleitoral(res.validos + R, res.vagas);
+    const p10 = piso(qeMax, 0.10);
+    out.qeMax = qeMax;
+    for (const L of Object.values(res.legendas)) {
+      const tot = L.votosNominais + L.votosLegenda;
+      const aptos = L.candidatos.filter((c) => c.votos >= p10).length;
+      const k = Math.min(Math.floor(tot / qeMax), aptos);
+      if (k > 0) { out.porLegenda[L.id] = k; out.total += k; }
+    }
+    return out;
+  }
 
-  return { calcular, fila, quocienteEleitoral, fmt };
+  /* ---------------- eleições majoritárias (Presidente, Governador, Senador) ----------------
+   * cands: [{votos, ...}] em qualquer ordem; validos: votos válidos já apurados;
+   * restantes: teto de votos ainda possíveis por candidato (eleitorado não apurado).
+   * vagas: 1 (Presidente/Governador) ou 1-2 (Senador). Não há 2º turno para Senador. */
+  function majoritaria(cands, validos, restantes, vagas, comSegundoTurno) {
+    const R = Math.max(0, Number(restantes) || 0);
+    const ord = [...cands].sort((a, b) => b.votos - a.votos || String(a.nome || "").localeCompare(String(b.nome || "")));
+    const v = validos || ord.reduce((s, c) => s + c.votos, 0);
+    const out = { ordem: ord, validos: v, lider: ord[0] || null, situacao: "sem votos", garantidos: [], segundoTurnoCerto: false, eleitoNoPrimeiro: false };
+    if (!v) return out;
+    if (!comSegundoTurno) {
+      // Senador: um candidato garante vaga quando no máximo (vagas-1) adversários ainda podem alcançá-lo
+      for (const c of ord) {
+        const ameacas = ord.filter((o) => o !== c && o.votos + R >= c.votos).length;
+        if (ameacas <= vagas - 1) out.garantidos.push(c);
+      }
+      out.situacao = out.garantidos.length >= vagas ? "definido" : "em aberto";
+      return out;
+    }
+    const lider = ord[0];
+    // eleito no 1º turno: mais da metade dos válidos finais, no pior caso (todo voto restante contra ele)
+    if (lider && lider.votos > (v + R) / 2) { out.eleitoNoPrimeiro = true; out.garantidos.push(lider); out.situacao = "eleito no 1º turno"; return out; }
+    // 2º turno certo: nenhum candidato chega a mais da metade nem recebendo todos os votos restantes
+    out.segundoTurnoCerto = ord.every((c) => c.votos + R <= (v + R) / 2);
+    if (R === 0) out.situacao = lider.votos > v / 2 ? "eleito no 1º turno" : "2º turno";
+    else out.situacao = out.segundoTurnoCerto ? "2º turno garantido" : (lider.votos > v / 2 ? "venceria no 1º turno agora" : "2º turno se terminasse agora");
+    if (R === 0 && lider.votos > v / 2) { out.eleitoNoPrimeiro = true; out.garantidos.push(lider); }
+    return out;
+  }
+
+  /* Cláusula de barreira (EC 97/2017, art. 3º), regra da legislatura que começa em 2027:
+   * (a) pelo menos 2,5% dos votos válidos para a Câmara no Brasil, distribuídos em pelo menos
+   *     1/3 das UFs (9) com no mínimo 1,5% dos válidos em cada uma; OU
+   * (b) pelo menos 13 deputados federais eleitos em pelo menos 9 UFs.
+   * Federações são avaliadas como um partido só. */
+  const CLAUSULA = { pctBrasil: 2.5, pctUf: 1.5, minUfs: 9, deputados: 13 };
+  function clausula(x) {
+    const pct = x.validos ? x.votos / x.validos * 100 : 0;
+    const porVotos = pct >= CLAUSULA.pctBrasil && x.ufs15 >= CLAUSULA.minUfs;
+    const porEleitos = x.deputados >= CLAUSULA.deputados && x.ufsDeputados >= CLAUSULA.minUfs;
+    return { pct, ok: porVotos || porEleitos, porVotos, porEleitos };
+  }
+
+  function fmt(n) { if (n == null) return "-"; return (Math.round(n) || 0).toLocaleString("pt-BR"); }
+
+  return { calcular, fila, garantidas, majoritaria, clausula, CLAUSULA, quocienteEleitoral, fmt };
 });

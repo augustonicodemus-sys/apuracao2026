@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Senado · Radar Numérico</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..125,400..800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="estilo.css">
+</head>
+<body>
+<nav class="site-nav" aria-label="Seções do site"><div class="nav-in"><a class="brand" href="index.html">Radar Numérico<span>Eleições 2026</span></a><ul><li><a class="item" href="index.html">Brasil</a></li><li><a class="item" href="federal.html">Deputados Federais por estado</a></li><li><a class="item" href="estaduais.html">Deputados Estaduais</a></li><li><a class="item" href="senado.html" aria-current="page">Senado</a></li><li><a class="item" href="presidente.html">Presidente</a></li><li><a class="item" href="governadores.html">Governadores</a></li></ul></div></nav>
+<main class="pg">
+  <div class="cab">
+    <h1>Senado Federal<small>54 vagas em disputa (2 por estado) + 27 senadores com mandato até 2031</small></h1>
+    <div class="kpis"><div class="kpi"><span>Vagas definidas agora</span><b id="k-agora">–</b></div><div class="kpi"><span>Vagas garantidas</span><b id="k-gar">–</b></div></div>
+  </div>
+  <div class="ctl"><button class="btn" id="atualizar" type="button">Atualizar</button><span class="st" id="status">carregando…</span></div>
+  <section class="painel" id="detalhe" hidden></section>
+  <div class="grade2">
+    <section class="painel"><h2>Composição do Senado a partir de 2027</h2>
+      <div id="modos" role="group" aria-label="O que o hemiciclo mostra"><button type="button" data-m="atual" aria-pressed="false">Bancada atual</button><button type="button" data-m="agora" aria-pressed="false">Se terminasse agora</button><button type="button" data-m="garantidas" aria-pressed="false">Garantidas</button></div>
+      <div id="camara"></div><p class="nota" id="nota-camara"></p></section>
+    <section class="painel"><h2>Partidos <small>81 cadeiras</small></h2><div class="tw" id="partidos"></div></section>
+  </div>
+  <section class="painel"><h2>Por estado <small>clique para detalhar</small></h2><div class="tw" id="estados"></div></section>
+  <p class="rodape">Projeção não oficial a partir dos dados públicos do TSE, atualizada a cada 60 segundos. "Garantido" quer dizer que nem todos os votos ainda não apurados (eleitorado das seções que faltam) mudariam aquele resultado. Esta página não tem vínculo com o TSE nem com partido algum; o resultado oficial é o do TSE.</p>
+</main>
+<script>window.CFG = { pagina: "senado" };</script>
+<script src="sim.js"></script>
+<script src="motor.js"></script>
+<script src="tse.js"></script>
+<script src="maj.js"></script>
+</body>
+</html>

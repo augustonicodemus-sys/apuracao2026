@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Presidente · Radar Numérico</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..125,400..800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="estilo.css">
+</head>
+<body>
+<nav class="site-nav" aria-label="Seções do site"><div class="nav-in"><a class="brand" href="index.html">Radar Numérico<span>Eleições 2026</span></a><ul><li><a class="item" href="index.html">Brasil</a></li><li><a class="item" href="federal.html">Deputados Federais por estado</a></li><li><a class="item" href="estaduais.html">Deputados Estaduais</a></li><li><a class="item" href="senado.html">Senado</a></li><li><a class="item" href="presidente.html" aria-current="page">Presidente</a></li><li><a class="item" href="governadores.html">Governadores</a></li></ul></div></nav>
+<main class="pg">
+  <div class="cab">
+    <h1>Presidente da República · 1º turno<small>Votos válidos no Brasil, se a apuração terminasse agora</small></h1>
+    <div class="kpis"><div class="kpi"><span>Seções totalizadas</span><b id="k-secoes">–</b></div><div class="kpi"><span>Votos válidos</span><b id="k-validos">–</b></div><div class="kpi"><span>Situação</span><b id="k-situ">–</b></div></div>
+  </div>
+  <div class="ctl"><button class="btn" id="atualizar" type="button">Atualizar</button><span class="st" id="status">carregando…</span></div>
+  <section class="painel"><h2>Candidatos <small>% dos votos válidos no Brasil</small></h2><div id="principal"></div></section>
+  <section class="painel"><h2>Por estado</h2><div class="tw" id="estados"></div></section>
+  <p class="rodape">Projeção não oficial a partir dos dados públicos do TSE, atualizada a cada 60 segundos. "Garantido" quer dizer que nem todos os votos ainda não apurados (eleitorado das seções que faltam) mudariam aquele resultado. Esta página não tem vínculo com o TSE nem com partido algum; o resultado oficial é o do TSE.</p>
+</main>
+<script>window.CFG = { pagina: "presidente" };</script>
+<script src="sim.js"></script>
+<script src="motor.js"></script>
+<script src="tse.js"></script>
+<script src="maj.js"></script>
+</body>
+</html>
