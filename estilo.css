@@ -99,3 +99,7 @@ body{margin:0;line-height:1.4}
 /* botão Atualizar em destaque (todas as páginas) */
 #atualizar{background:#F2C230;border:1px solid #D9A916;color:#16243A;font-weight:600}
 #atualizar:hover{background:#E5B41F}
+
+/* logo na marca do menu (volta para a página inicial) */
+.site-nav .brand{display:inline-flex;align-items:baseline;gap:0}
+.site-nav .brand img{height:25px;width:auto;margin-right:8px;align-self:center}
