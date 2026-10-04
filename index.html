@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..125,400..800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="estilo.css?v=1805">
+<link rel="stylesheet" href="estilo.css?v=2030">
 <style>
 .home{max-width:1400px;margin:0 auto;padding:18px 20px 32px}
 .cab{display:flex;flex-wrap:wrap;align-items:flex-end;gap:8px 28px;margin-bottom:14px}
@@ -26,6 +26,22 @@
 .grade{display:grid;grid-template-columns:minmax(0,.85fr) minmax(0,1.45fr) minmax(0,1fr);gap:18px;align-items:start}
 .painel{border:1px solid var(--line);border-radius:8px;padding:14px 14px 10px;background:var(--paper);min-width:0}
 .painel h2{font-size:15px;font-weight:700;margin:0 0 8px;display:flex;align-items:baseline;justify-content:space-between;gap:8px}
+#partidos tbody tr{cursor:pointer}
+#partidos tbody tr:hover td{background:var(--dest)}
+#partidos tbody tr.sel td{background:var(--dest)}
+#det select{font:inherit;font-size:14px;font-weight:700;padding:2px 6px;border:1px solid var(--line);border-radius:6px;background:var(--paper);color:var(--ink)}
+#det .tw{overflow-x:auto}
+#det table{border-collapse:collapse;width:100%;font-size:13px}
+#det th,#det td{padding:4px 7px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+#det th{font-size:12px;font-weight:600;color:var(--ink-2);background:var(--panel)}
+#det th.l,#det td.l{text-align:left}
+#det tr.abaixo td{color:var(--mute)}
+#det .barra{display:inline-block;height:9px;border-radius:2px;vertical-align:-1px;margin-right:6px}
+#det .res{display:flex;flex-wrap:wrap;gap:6px 28px;margin:4px 0 10px;font-size:13px;color:var(--ink-2)}
+#det .res b{font-size:18px;color:var(--ink);display:block}
+#det .res .ok{color:var(--verde)}
+#det .res .nok{color:var(--vinho)}
+#det .nota2{font-size:12.5px;color:var(--mute);margin:8px 0 2px;max-width:110ch}
 .painel h2 small{font-weight:400;color:var(--mute);font-size:12px}
 #modos{display:inline-flex;border:1px solid var(--line);border-radius:6px;overflow:hidden;margin-bottom:6px}
 #modos button{font:inherit;font-size:12px;border:0;background:var(--paper);color:var(--ink-2);padding:5px 7px;cursor:pointer;border-left:1px solid var(--line)}
@@ -105,11 +121,17 @@ td.c{text-align:center}
     </section>
   </div>
 
+  <section class="painel" id="det" style="margin-top:18px" hidden>
+    <h2><span>Votação por estado · <select id="det-sel" aria-label="Escolher partido"></select></span><a href="#" id="det-fechar" style="font-size:12px;font-weight:400;color:var(--ink-2)">fechar ×</a></h2>
+    <div id="det-resumo"></div>
+    <div class="tw" id="det-tab"></div>
+  </section>
+
   <p class="rodape">Cálculo pelas regras do Código Eleitoral (quociente eleitoral, quociente partidário, 80% do QE e candidato com 20% para as sobras). Os detalhes de cada estado, a fila das legendas e quantos votos faltam para cada partido estão em <a href="federal.html">Deputados Federais por estado</a>. Esta página não tem vínculo com o TSE nem com partido algum; o resultado oficial é o do TSE.</p>
 </main>
-<script src="sim.js?v=1805"></script>
-<script src="motor.js?v=1805"></script>
-<script src="tse.js?v=1805"></script>
-<script src="inicio.js?v=1805"></script>
+<script src="sim.js?v=2030"></script>
+<script src="motor.js?v=2030"></script>
+<script src="tse.js?v=2030"></script>
+<script src="inicio.js?v=2030"></script>
 </body>
 </html>

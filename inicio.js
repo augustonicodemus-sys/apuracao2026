@@ -74,8 +74,15 @@
     const L = (id) => (linhas[id] = linhas[id] || { id, membros: new Set(), atual: 0, agora: 0, garantidas: 0, agoraPorPartido: {}, votos: 0, ufs15: 0, ufsCad: new Set() });
     for (const [p, n] of Object.entries(BANCADA_ATUAL.p)) { const x = L(legOf(p)); x.atual += n; x.membros.add(T.normSigla(p)); }
     let secoes = 0, nSec = 0, tsSum = 0, stSum = 0, distribuidas = 0, garantidas = 0, validosBR = 0;
-    const candidatos = [];
+    const candidatos = [], porUf = [];
     for (const r of ok) {
+      const te = r.d.eleitorado || 0, na = r.d.eleitoradoNaoApurado;
+      const pstN = parseFloat(String(r.d.pst || "").replace(",", "."));
+      const fracSec = r.d.secoesTotal ? r.d.secoesTot / r.d.secoesTotal : (isNaN(pstN) ? null : pstN / 100);
+      const info = { u: r.u, validos: r.res.validos || 0, sec: fracSec, votos: {}, cad: {} };
+      for (const Lg of Object.values(r.res.legendas)) info.votos[Lg.id] = Lg.votosNominais + Lg.votosLegenda;
+      for (const c of r.res.eleitos) info.cad[c.legendaId] = (info.cad[c.legendaId] || 0) + 1;
+      porUf.push(info);
       const p = parseFloat(String(r.d.pst || "0").replace(",", "."));
       if (!isNaN(p)) { secoes += p; nSec++; }
       tsSum += r.d.secoesTotal || 0; stSum += r.d.secoesTot || 0;
@@ -96,7 +103,7 @@
     for (const id of Object.keys(FED_RESERVA)) if (linhas[id]) for (const m of FED_RESERVA[id]) linhas[id].membros.add(m);
     candidatos.sort((a, b) => b.votos - a.votos || a.nome.localeCompare(b.nome));
     return {
-      linhas: Object.values(linhas), distribuidas, garantidas, validosBR, falhas: ufs.length - ok.length,
+      linhas: Object.values(linhas), porUf, distribuidas, garantidas, validosBR, falhas: ufs.length - ok.length,
       secoes: tsSum ? stSum / tsSum * 100 : (nSec ? secoes / nSec : 0), top: candidatos.slice(0, 20), comVotos: candidatos.length > 0,
     };
   }
@@ -156,9 +163,10 @@
           const por = c.porVotos && c.porEleitos ? "por votos e por eleitos" : c.porVotos ? "por votos (2,5% e 1,5% em 9 UFs)" : c.porEleitos ? `por eleitos (${x.agora} deputados em ${x.ufsCad.size} UFs)` : `não atinge: ${pc1(c.pct)} no Brasil e ${x.ufs15} UFs com 1,5%; ${x.agora} deputados em ${x.ufsCad.size} UFs`;
           clTd = c.ok ? `<span class="cl sim" title="Passa ${por}">✓</span>` : `<span class="cl nao" title="${por}">✗</span>`;
         }
-        return `<tr><td class="l"><i class="dot" style="background:${cor(x.id)}"></i><b>${esc(nomeLeg(x.id))}</b>${sub}</td><td>${x.atual || "–"}</td><td><b>${x.agora || "–"}</b>${delta(x)}</td><td>${x.garantidas || "–"}</td><td>${pctTd}</td><td>${ufTd}</td><td class="c">${clTd}</td></tr>`;
+        return `<tr data-leg="${esc(x.id)}" class="${x.id === detLeg ? "sel" : ""}" title="Clique para ver a votação por estado"><td class="l"><i class="dot" style="background:${cor(x.id)}"></i><b>${esc(nomeLeg(x.id))}</b>${sub}</td><td>${x.atual || "–"}</td><td><b>${x.agora || "–"}</b>${delta(x)}</td><td>${x.garantidas || "–"}</td><td>${pctTd}</td><td>${ufTd}</td><td class="c">${clTd}</td></tr>`;
       }).join("") +
-      `</tbody><tfoot><tr><td class="l">Total</td><td>${tAt}</td><td>${R.distribuidas}</td><td>${R.garantidas}</td><td></td><td></td><td></td></tr></tfoot></table><p class="nota">Cláusula de barreira 2026: ✓ com 2,5% dos votos válidos no Brasil e 1,5% em pelo menos 9 estados — ou com 13 deputados eleitos em pelo menos 9 estados. Federações contam como um partido só. Passe o mouse sobre ✓/✗ para ver o critério.</p>`;
+      `</tbody><tfoot><tr><td class="l">Total</td><td>${tAt}</td><td>${R.distribuidas}</td><td>${R.garantidas}</td><td></td><td></td><td></td></tr></tfoot></table><p class="nota">Cláusula de barreira 2026: ✓ com 2,5% dos votos válidos no Brasil e 1,5% em pelo menos 9 estados — ou com 13 deputados eleitos em pelo menos 9 estados. Federações contam como um partido só. Passe o mouse sobre ✓/✗ para ver o critério. <b>Clique num partido</b> para ver a votação dele estado por estado.</p>`;
+    detalhe(R);
 
     // top 20
     $("#top").innerHTML = R.top.length ? `<table><thead><tr><th>#</th><th class="l">Candidato</th><th class="l">Partido</th><th>Votos</th></tr></thead><tbody>` +
@@ -166,10 +174,47 @@
       `</tbody></table><p class="nota"><span class="ok">✓</span> eleito se a apuração terminasse agora</p>` : '<p class="vazio">Sem votos apurados ainda. O ranking aparece quando a totalização começar.</p>';
   }
 
+
+  // ------------------------------------------------------------ detalhe de um partido por estado
+  let detLeg = (new URLSearchParams(location.search).get("partido") || "").toUpperCase() || null;
+  function detalhe(R) {
+    const box = $("#det");
+    if (!detLeg || !R.comVotos) { box.hidden = true; return; }
+    const x = R.linhas.find((l) => l.id === detLeg);
+    if (!x) { box.hidden = true; return; }
+    box.hidden = false;
+    const ordemLeg = [...R.linhas].filter((l) => l.votos > 0 || l.atual > 0).sort((a, b) => b.votos - a.votos);
+    $("#det-sel").innerHTML = ordemLeg.map((l) => `<option value="${esc(l.id)}"${l.id === detLeg ? " selected" : ""}>${esc(nomeLeg(l.id))}</option>`).join("");
+    const pc = (v, d = 2) => (v * 100).toLocaleString("pt-BR", { minimumFractionDigits: d, maximumFractionDigits: d }) + "%";
+    const piso = M.CLAUSULA.pctUf / 100;
+    const linhas = R.porUf.map((i) => ({ ...i, v: i.votos[detLeg] || 0, p: i.validos ? (i.votos[detLeg] || 0) / i.validos : 0, c: i.cad[detLeg] || 0 }))
+      .sort((a, b) => b.p - a.p || b.v - a.v);
+    // projeção simples: cada estado mantém o % atual da legenda até 100% das seções
+    let pv = 0, pval = 0, semDado = [];
+    for (const l of linhas) { if (l.sec && l.sec > 0 && l.validos) { pv += l.v / l.sec; pval += l.validos / l.sec; } else semDado.push(l.u); }
+    const pctAtual = R.validosBR ? x.votos / R.validosBR : 0, pctProj = pval ? pv / pval : 0;
+    const meta = M.CLAUSULA.pctBrasil / 100;
+    const ufs15 = linhas.filter((l) => l.p >= piso).length;
+    const max = Math.max(...linhas.map((l) => l.p), piso * 1.5, 0.0001);
+    $("#det-resumo").innerHTML = `<div class="res">
+      <div>% no Brasil agora<b class="${pctAtual >= meta ? "ok" : "nok"}">${pc(pctAtual)}</b>meta da cláusula: 2,50%</div>
+      <div>% no Brasil projetado<b class="${pctProj >= meta ? "ok" : "nok"}">${pc(pctProj)}</b>${pctProj >= meta ? "acima" : "abaixo"} da meta por ${pc(Math.abs(pctProj - meta))}</div>
+      <div>Estados com ≥ 1,5%<b class="${ufs15 >= M.CLAUSULA.minUfs ? "ok" : "nok"}">${ufs15} de 27</b>meta: 9 estados</div>
+      <div>Cadeiras projetadas<b>${x.agora}</b>em ${x.ufsCad.size} estado(s) · por eleitos: 13 em 9</div></div>`;
+    $("#det-tab").innerHTML = `<table><thead><tr><th>#</th><th class="l">Estado</th><th class="l">% dos válidos no estado</th><th>Votos da legenda</th><th>Válidos no estado</th><th>Seções apuradas</th><th title="Votos que a legenda teria com 100% das seções, mantido o % atual">Votos projetados</th><th>Cadeiras proj.</th></tr></thead><tbody>` +
+      linhas.map((l, k) => `<tr class="${l.p < piso ? "abaixo" : ""}"><td>${k + 1}</td><td class="l"><b>${l.u}</b> <span style="color:var(--mute)">${esc(T.NOMES[l.u])}</span></td>` +
+        `<td class="l"><span class="barra" style="width:${Math.max(1, Math.round(l.p / max * 120))}px;background:${l.p >= piso ? cor(detLeg) : "var(--line)"}"></span>${pc(l.p)} ${l.p >= piso ? "✓" : ""}</td>` +
+        `<td>${fmt(l.v)}</td><td>${fmt(l.validos)}</td><td>${l.sec != null ? pc(l.sec, 1) : "–"}</td><td>${l.sec ? fmt(l.v / l.sec) : "–"}</td><td>${l.c || "–"}</td></tr>`).join("") +
+      `</tbody></table><p class="nota2">Ordenado do maior para o menor percentual. ✓ = estado com pelo menos 1,5% dos válidos (a cláusula exige 9). <b>Projetado</b>: conta simples em que cada estado mantém o percentual atual da legenda até 100% das seções; estados que apuram mais tarde passam a pesar o que pesam no eleitorado. Não é previsão: o perfil das urnas que faltam pode ser diferente.${semDado.length ? " Sem votos ainda, fora da projeção: " + semDado.join(", ") + "." : ""}</p>`;
+  }
+
   // ------------------------------------------------------------ eventos
   function init() {
     document.querySelectorAll("#modos button").forEach((b) => b.addEventListener("click", () => { modo = b.dataset.m; if (ultimo) render(ultimo); }));
     $("#atualizar").addEventListener("click", carregar);
+    $("#partidos").addEventListener("click", (ev) => { const tr = ev.target.closest("tr[data-leg]"); if (!tr) return; detLeg = tr.dataset.leg; if (ultimo) render(ultimo); $("#det").scrollIntoView({ behavior: "smooth", block: "start" }); });
+    $("#det-sel").addEventListener("change", (ev) => { detLeg = ev.target.value; if (ultimo) render(ultimo); });
+    $("#det-fechar").addEventListener("click", (ev) => { ev.preventDefault(); detLeg = null; if (ultimo) render(ultimo); });
     $("#fonte-atual").textContent = `${BANCADA_ATUAL.fonte}, ${BANCADA_ATUAL.data}`;
     carregar();
   }
