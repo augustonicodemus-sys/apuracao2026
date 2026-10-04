@@ -73,11 +73,12 @@
     const linhas = {};
     const L = (id) => (linhas[id] = linhas[id] || { id, membros: new Set(), atual: 0, agora: 0, garantidas: 0, agoraPorPartido: {}, votos: 0, ufs15: 0, ufsCad: new Set() });
     for (const [p, n] of Object.entries(BANCADA_ATUAL.p)) { const x = L(legOf(p)); x.atual += n; x.membros.add(T.normSigla(p)); }
-    let secoes = 0, nSec = 0, distribuidas = 0, garantidas = 0, validosBR = 0;
+    let secoes = 0, nSec = 0, tsSum = 0, stSum = 0, distribuidas = 0, garantidas = 0, validosBR = 0;
     const candidatos = [];
     for (const r of ok) {
       const p = parseFloat(String(r.d.pst || "0").replace(",", "."));
       if (!isNaN(p)) { secoes += p; nSec++; }
+      tsSum += r.d.secoesTotal || 0; stSum += r.d.secoesTot || 0;
       validosBR += r.res.validos || 0;
       for (const Lg of Object.values(r.res.legendas)) {
         const tot = Lg.votosNominais + Lg.votosLegenda;
@@ -96,7 +97,7 @@
     candidatos.sort((a, b) => b.votos - a.votos || a.nome.localeCompare(b.nome));
     return {
       linhas: Object.values(linhas), distribuidas, garantidas, validosBR, falhas: ufs.length - ok.length,
-      secoes: nSec ? secoes / nSec : 0, top: candidatos.slice(0, 20), comVotos: candidatos.length > 0,
+      secoes: tsSum ? stSum / tsSum * 100 : (nSec ? secoes / nSec : 0), top: candidatos.slice(0, 20), comVotos: candidatos.length > 0,
     };
   }
 

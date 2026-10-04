@@ -62,7 +62,7 @@
     return {
       candidatos, legenda, partidos, federacoes,
       vagasTse: num(cg.nv), qeTse: num(cg.qe),
-      pst: s.pst || d.pst || "", vv: num(v.vv || d.vv), vansj: num(v.vansj),
+      pst: s.pst || d.pst || "", secoesTotal: num(s.ts), secoesTot: num(s.st), vv: num(v.vv || d.vv), vansj: num(v.vansj),
       eleitorado: num(e.te), eleitoradoNaoApurado: e.esnt != null ? num(e.esnt) : null,
       hora: (d.dg && d.hg) ? `${d.dg} ${d.hg}` : `${d.dt || ""} ${d.ht || ""}`,
     };

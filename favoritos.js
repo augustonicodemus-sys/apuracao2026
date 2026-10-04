@@ -105,8 +105,8 @@
 
   // ------------------------------------------------------------ tabelas
   const CAB = {
-    prop: ["", "Candidato", "Nº", "Partido", "UF", "Apurado", "Votos", "% do QE", "Situação"],
-    maj: ["", "Candidato", "Nº", "Partido", "UF", "Apurado", "Votos", "% válidos", "Posição", "Situação"],
+    prop: ["", "Candidato", "Nº", "Partido", "UF", "Apurado", "Votos", "% do QE", "Situação parcial"],
+    maj: ["", "Candidato", "Nº", "Partido", "UF", "Apurado", "Votos", "% válidos", "Posição", "Situação parcial"],
   };
   function tabela(c, linhas) {
     const cab = CAB[PROP(c) ? "prop" : "maj"], esq = new Set([1, 3, cab.length - 1]);
