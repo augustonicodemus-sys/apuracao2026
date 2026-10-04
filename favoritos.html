@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Meus candidatos · Radar Numérico</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..125,400..800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="estilo.css?v=1735">
+<style>
+.busca{display:grid;grid-template-columns:auto auto minmax(0,1fr);gap:8px;align-items:end;margin-bottom:6px}
+.busca label{display:flex;flex-direction:column;font-size:12px;color:var(--mute);gap:3px}
+.busca select,.busca input{font:inherit;font-size:14px;padding:6px 9px;border:1px solid var(--line);border-radius:6px;background:var(--paper);color:var(--ink);min-width:0}
+.busca input{width:100%}
+#resultados{margin-top:8px}
+#resultados .lin{display:flex;align-items:center;gap:10px;padding:6px 2px;border-top:1px solid var(--line);font-size:14px}
+#resultados .lin:first-child{border-top:0}
+#resultados .lin small{color:var(--mute)}
+#resultados .lin .mais{margin-left:auto}
+.add{font:inherit;font-size:13px;font-weight:600;padding:3px 10px;border:1px solid #D9A916;border-radius:14px;background:#FFF3C4;color:var(--ink);cursor:pointer;white-space:nowrap}
+.add:hover{background:#F2C230}
+.add[disabled]{background:var(--panel);border-color:var(--line);color:var(--mute);cursor:default}
+.pg td:first-child{width:30px}
+.rem{font:inherit;font-size:16px;line-height:1;border:0;background:none;color:var(--mute);cursor:pointer;padding:2px 6px}
+.rem:hover{color:var(--vinho)}
+.pg .tag.nao{background:var(--panel);color:var(--mute);font-weight:400}
+.pg .tag.sobra{background:var(--ambar-bg);color:var(--ambar)}
+.pg .tag.fora{background:var(--vinho-bg);color:var(--vinho);font-weight:400}
+.compart{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:13px;color:var(--ink-2)}
+@media (max-width:720px){.busca{grid-template-columns:1fr 1fr}.busca label.q{grid-column:1 / -1}}
+</style>
+<!-- Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-RDGZ8VSS5R"></script>
+<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag("js",new Date());gtag("config","G-RDGZ8VSS5R");</script>
+</head>
+<body>
+<nav class="site-nav" aria-label="Seções do site"><div class="nav-in"><a class="brand" href="/" title="Página inicial do Radar Numérico"><img src="/logo.png" alt="" width="22" height="25">Radar Numérico<span>Eleições 2026</span></a><ul><li><a class="item" href="index.html">Brasil</a></li><li><a class="item" href="federal.html">Deputados Federais por estado</a></li><li><a class="item" href="estaduais.html">Deputados Estaduais</a></li><li><a class="item" href="senado.html">Senado</a></li><li><a class="item" href="presidente.html">Presidente</a></li><li><a class="item" href="governadores.html">Governadores</a></li><li><a class="item" href="favoritos.html" aria-current="page">★ Meus candidatos</a></li><li><a class="item" href="/#sobre">Sobre</a></li></ul></div></nav>
+<main class="pg">
+  <div class="cab">
+    <h1>Meus candidatos<small>Acompanhe só quem você escolher, de qualquer cargo e estado, se a apuração terminasse agora</small></h1>
+  </div>
+
+  <section class="painel">
+    <h2>Adicionar candidato</h2>
+    <div class="busca">
+      <label>Cargo<select id="f-cargo">
+        <option value="6">Deputado Federal</option>
+        <option value="7">Deputado Estadual / Distrital</option>
+        <option value="5">Senador</option>
+        <option value="3">Governador</option>
+        <option value="1">Presidente</option>
+      </select></label>
+      <label id="lb-uf">Estado<select id="f-uf"></select></label>
+      <label class="q">Nome ou número<input id="f-q" type="search" placeholder="digite parte do nome ou o número" autocomplete="off"></label>
+    </div>
+    <div id="resultados"><p class="vazio">Escolha o cargo e o estado e digite o nome ou número do candidato.</p></div>
+  </section>
+
+  <div class="ctl"><button class="btn" id="atualizar" type="button">Atualizar</button><span class="st" id="status"></span></div>
+
+  <section class="painel"><h2>Deputados Federais <small id="n-6"></small></h2><div class="tw" id="t-6"></div></section>
+  <section class="painel"><h2>Deputados Estaduais e Distritais <small id="n-7"></small></h2><div class="tw" id="t-7"></div></section>
+  <section class="painel"><h2>Senadores <small id="n-5"></small></h2><div class="tw" id="t-5"></div></section>
+  <section class="painel"><h2>Governadores <small id="n-3"></small></h2><div class="tw" id="t-3"></div></section>
+  <section class="painel"><h2>Presidente <small id="n-1"></small></h2><div class="tw" id="t-1"></div></section>
+
+  <div class="compart" id="compart"></div>
+  <p class="rodape">Sua lista fica guardada neste navegador (não precisa de cadastro). Situação calculada com as regras do quociente eleitoral, quociente partidário e sobras para deputados, e pela ordem de votação para os cargos majoritários. Projeção não oficial a partir dos dados públicos do TSE, atualizada a cada 60 segundos; o resultado oficial é o do TSE.</p>
+</main>
+<script src="sim.js?v=1735"></script>
+<script src="motor.js?v=1735"></script>
+<script src="tse.js?v=1735"></script>
+<script src="favoritos.js?v=1735"></script>
+</body>
+</html>
