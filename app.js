@@ -58,18 +58,24 @@
     const cg = cargos.find((c) => String(c.cd) === String(cargoUf(u))) || cargos[0];
     const fedPorNum = {}, federacoes = {};
     for (const f of cg.fed || []) { const id = nomeFed(f); fedPorNum[String(f.n)] = id; federacoes[id] = []; }
-    const candidatos = [], legenda = {}, partidos = {};
+    const candidatos = [], legenda = {}, partidos = {}, anulados = [];
     for (const a of cg.agr || []) for (const p of a.par || []) {
       const sg = normSigla(p.sg || "");
       const nfed = String(p.nfed || "");
       if (nfed && fedPorNum[nfed]) federacoes[fedPorNum[nfed]].push(sg);
       legenda[sg] = num(p.tvtl);
       partidos[sg] = { nome: p.nm || sg, numero: String(p.n || ""), nominais: num(p.tvtn), legenda: num(p.tvtl) };
-      for (const k of p.cand || []) candidatos.push({ nome: titulo(k.nm || k.nmu || ""), numero: String(k.n || ""), partido: sg, votos: num(k.vap), situacaoTse: String(k.st || "") });
+      for (const k of p.cand || []) {
+        // destinação do voto (dvt): "Anulado sub judice"/"Anulado" não conta para ninguém; "Válido (legenda)" vai para a legenda
+        const dvt = String(k.dvt || "");
+        if (/anulad/i.test(dvt)) { anulados.push({ nome: titulo(k.nmu || k.nm || ""), numero: String(k.n || ""), partido: sg, votos: num(k.vap), dvt }); continue; }
+        if (/legenda/i.test(dvt)) { legenda[sg] += num(k.vap); continue; }
+        candidatos.push({ nome: titulo(k.nm || k.nmu || ""), numero: String(k.n || ""), partido: sg, votos: num(k.vap), situacaoTse: String(k.st || "") });
+      }
     }
     for (const k of Object.keys(federacoes)) if (!federacoes[k].length) delete federacoes[k];
     const s = d.s || {}, v = d.v || {}, e = d.e || {};
-    return { eleitorado: num(e.te), eleitoradoApurado: e.esnt != null ? Math.max(0, num(e.te) - num(e.esnt)) : (e.est != null ? num(e.est) : null), candidatos, legenda, partidos, federacoes, qeTse: num(cg.qe), vagasTse: num(cg.nv), pst: s.pst || d.pst || "", vv: num(v.vv || d.vv), vnom: num(v.vnom || d.vnom), vl: num(v.vl || d.vl), hora: (d.dt && d.ht) ? `${d.dt} ${d.ht}` : `${d.dg || ""} ${d.hg || ""}`, nomeCargo: cg.nmn || "" };
+    return { eleitorado: num(e.te), eleitoradoApurado: e.esnt != null ? Math.max(0, num(e.te) - num(e.esnt)) : (e.est != null ? num(e.est) : null), candidatos, anulados, legenda, partidos, federacoes, qeTse: num(cg.qe), vagasTse: num(cg.nv), pst: s.pst || d.pst || "", vv: num(v.vv || d.vv), vnom: num(v.vnom || d.vnom), vl: num(v.vl || d.vl), hora: (d.dg && d.hg) ? `${d.dg} ${d.hg}` : `${d.dt || ""} ${d.ht || ""}`, nomeCargo: cg.nmn || "" };
   }
 
   // ------------------------------------------------------------ render helpers

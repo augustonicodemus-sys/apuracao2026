@@ -50,7 +50,12 @@
       if (nfed && fedPorNum[nfed]) federacoes[fedPorNum[nfed]].push(sg);
       legenda[sg] = num(p.tvtl);
       partidos[sg] = { nome: p.nm || sg, numero: String(p.n || "") };
-      for (const k of p.cand || []) candidatos.push({ nome: titulo(k.nm || k.nmu || ""), urna: titulo(k.nmu || k.nm || ""), numero: String(k.n || ""), partido: sg, votos: num(k.vap), situacaoTse: String(k.st || "") });
+      for (const k of p.cand || []) {
+        const dvt = String(k.dvt || ""); // "Anulado sub judice": votos não contam; "Válido (legenda)": vão para a legenda
+        if (/anulad/i.test(dvt)) continue;
+        if (/legenda/i.test(dvt)) { legenda[sg] += num(k.vap); continue; }
+        candidatos.push({ nome: titulo(k.nm || k.nmu || ""), urna: titulo(k.nmu || k.nm || ""), numero: String(k.n || ""), partido: sg, votos: num(k.vap), situacaoTse: String(k.st || "") });
+      }
     }
     for (const k of Object.keys(federacoes)) if (!federacoes[k].length) delete federacoes[k];
     const s = d.s || {}, v = d.v || {}, e = d.e || {};
@@ -59,7 +64,7 @@
       vagasTse: num(cg.nv), qeTse: num(cg.qe),
       pst: s.pst || d.pst || "", vv: num(v.vv || d.vv), vansj: num(v.vansj),
       eleitorado: num(e.te), eleitoradoNaoApurado: e.esnt != null ? num(e.esnt) : null,
-      hora: (d.dt && d.ht) ? `${d.dt} ${d.ht}` : `${d.dg || ""} ${d.hg || ""}`,
+      hora: (d.dg && d.hg) ? `${d.dg} ${d.hg}` : `${d.dt || ""} ${d.ht || ""}`,
     };
   }
 
@@ -69,13 +74,14 @@
     const cg = cargos.find((c) => String(c.cd) === String(cargo)) || cargos[0] || {};
     const cands = [];
     for (const a of cg.agr || []) for (const p of a.par || []) for (const k of p.cand || []) {
+      if (/anulad/i.test(String(k.dvt || ""))) continue; // candidato com votos anulados (sub judice) fica fora da disputa
       cands.push({ nome: titulo(k.nm || k.nmu || ""), urna: titulo(k.nmu || k.nm || ""), numero: String(k.n || ""), partido: normSigla(p.sg || ""), coligacao: a.tp === "c" || (a.par || []).length > 1 ? String(a.nm || "") : "", votos: num(k.vap), st: String(k.st || ""), eleitoTse: k.e === "s" });
     }
     const s = d.s || {}, v = d.v || {}, e = d.e || {};
     return {
       cands, vagas: num(cg.nv) || 1, pst: s.pst || "", pstNum: parseFloat(String(s.pst || "0").replace(",", ".")) || 0,
       vv: num(v.vv), vansj: num(v.vansj), eleitorado: num(e.te), eleitoradoNaoApurado: e.esnt != null ? num(e.esnt) : null,
-      hora: (d.dt && d.ht) ? `${d.dt} ${d.ht}` : `${d.dg || ""} ${d.hg || ""}`,
+      hora: (d.dg && d.hg) ? `${d.dg} ${d.hg}` : `${d.dt || ""} ${d.ht || ""}`,
     };
   }
   // teto de votos ainda possíveis (eleitores de seções não totalizadas + anulados sub judice)
