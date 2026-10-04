@@ -14,10 +14,10 @@
   const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
   const pct = (x, d = 1) => (x * 100).toLocaleString("pt-BR", { minimumFractionDigits: d, maximumFractionDigits: d }) + "%";
   const sigla = (p) => ({ PCDOB: "PCdoB", UNIAO: "União", MISSAO: "Missão", "S/PARTIDO": "sem partido" }[p] || p);
-  const CORES = { PL: "#1D3D8F", PT: "#D7263D", UNIAO: "#3E86C9", PP: "#5DA9E9", PSD: "#F2A900", REPUBLICANOS: "#7CC7E8", MDB: "#2F9E5B",
-    PODE: "#8CC63F", PSDB: "#0E7C86", CIDADANIA: "#4DB6AC", PSB: "#F08CA8", PSOL: "#F7D046", REDE: "#C5D86D", PDT: "#A23B72", NOVO: "#FF8C1A",
-    AVANTE: "#00B3A1", PRD: "#8E6C3A", SOLIDARIEDADE: "#C1773A", MISSAO: "#6C3BAA", DC: "#9C8FC4", PCDOB: "#B5172B", PV: "#4CAF50", DEMOCRATA: "#7B8FA1" };
-  const EXTRAS = ["#B5838D", "#6D597A", "#99A88C", "#C9A227", "#5F7A8A", "#BC6C25", "#7A9E9F", "#A68A64", "#8D99AE", "#C08497"];
+  const CORES = {
+    "PL": "#12286B", "PT": "#D7263D", "FE BRASIL": "#D7263D", "MISSAO": "#F2C230", "PSOL": "#7B2CBF", "PSOL/REDE": "#7B2CBF", "NOVO": "#FF7A00", "PSB": "#2E8B57", "PDT": "#5DAE6B", "PCDOB": "#1B6E3A", "PV": "#8BC58F", "REDE": "#A8D5A2", "PCO": "#9CCC65", "PSTU": "#6E9F3F", "UP": "#4F9A5E", "UNIAO": "#3F8FD8", "PP": "#6FB4EA", "UNIAO/PP": "#3F8FD8", "REPUBLICANOS": "#8DCBF0", "DC": "#B3DCF5", "PRTB": "#5FA8D3", "DEMOCRATA": "#A3C9E8", "PSD": "#8B5E3C", "MDB": "#A47551", "PODE": "#7D8590", "PSDB": "#9AA3AE", "CIDADANIA": "#B8BFC7", "PSDB/CIDADANIA": "#9AA3AE", "AVANTE": "#6B5B4E", "SOLIDARIEDADE": "#C2A07E", "PRD": "#8C7B6B", "PRD/SOLIDARIEDADE": "#B08B66",
+  };
+  const EXTRAS = ["#9E9E9E", "#B7A99A", "#7F8C8D", "#A1887F", "#BDBDBD", "#8D7B6A", "#90A4AE", "#C2B8A3", "#757575", "#A69C90"];
   const cor = (p) => CORES[p] || EXTRAS[[...String(p)].reduce((s, c) => s + c.charCodeAt(0), 0) % EXTRAS.length];
   const dot = (p) => `<i class="dot" style="background:${cor(p)}"></i>`;
   const simQ = () => (window.Sim && Sim.ativo ? "&sim=" + Sim.pct : "");
