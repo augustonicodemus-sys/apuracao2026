@@ -79,7 +79,7 @@
       const te = r.d.eleitorado || 0, na = r.d.eleitoradoNaoApurado;
       const pstN = parseFloat(String(r.d.pst || "").replace(",", "."));
       const fracSec = r.d.secoesTotal ? r.d.secoesTot / r.d.secoesTotal : (isNaN(pstN) ? null : pstN / 100);
-      const info = { u: r.u, validos: r.res.validos || 0, sec: fracSec, votos: {}, cad: {} };
+      const info = { u: r.u, validos: r.res.validos || 0, qe: r.res.qe || 0, sec: fracSec, votos: {}, cad: {} };
       for (const Lg of Object.values(r.res.legendas)) info.votos[Lg.id] = Lg.votosNominais + Lg.votosLegenda;
       for (const c of r.res.eleitos) info.cad[c.legendaId] = (info.cad[c.legendaId] || 0) + 1;
       porUf.push(info);
@@ -201,10 +201,10 @@
       <div>% no Brasil projetado<b class="${pctProj >= meta ? "ok" : "nok"}">${pc(pctProj)}</b>${pctProj >= meta ? "acima" : "abaixo"} da meta por ${pc(Math.abs(pctProj - meta))}</div>
       <div>Estados com ≥ 1,5%<b class="${ufs15 >= M.CLAUSULA.minUfs ? "ok" : "nok"}">${ufs15} de 27</b>meta: 9 estados</div>
       <div>Cadeiras projetadas<b>${x.agora}</b>em ${x.ufsCad.size} estado(s) · por eleitos: 13 em 9</div></div>`;
-    $("#det-tab").innerHTML = `<table><thead><tr><th>#</th><th class="l">Estado</th><th class="l">% dos válidos no estado</th><th>Votos da legenda</th><th>Válidos no estado</th><th>Seções apuradas</th><th title="Votos que a legenda teria com 100% das seções, mantido o % atual">Votos projetados</th><th>Cadeiras proj.</th></tr></thead><tbody>` +
+    $("#det-tab").innerHTML = `<table><thead><tr><th>#</th><th class="l">Estado</th><th class="l">% dos válidos no estado</th><th title="Votos da legenda ÷ quociente eleitoral do estado (1,00 = uma cadeira pelo QP)">Nº de QEs</th><th>Votos da legenda</th><th>Válidos no estado</th><th>Seções apuradas</th><th title="Votos que a legenda teria com 100% das seções, mantido o % atual">Votos projetados</th><th>Cadeiras proj.</th></tr></thead><tbody>` +
       linhas.map((l, k) => `<tr class="${l.p < piso ? "abaixo" : ""}"><td>${k + 1}</td><td class="l"><b>${l.u}</b> <span style="color:var(--mute)">${esc(T.NOMES[l.u])}</span></td>` +
         `<td class="l"><span class="barra" style="width:${Math.max(1, Math.round(l.p / max * 120))}px;background:${l.p >= piso ? cor(detLeg) : "var(--line)"}"></span>${pc(l.p)} ${l.p >= piso ? "✓" : ""}</td>` +
-        `<td>${fmt(l.v)}</td><td>${fmt(l.validos)}</td><td>${l.sec != null ? pc(l.sec, 1) : "–"}</td><td>${l.sec ? fmt(l.v / l.sec) : "–"}</td><td>${l.c || "–"}</td></tr>`).join("") +
+        `<td>${l.qe ? (l.v / l.qe).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "–"}</td><td>${fmt(l.v)}</td><td>${fmt(l.validos)}</td><td>${l.sec != null ? pc(l.sec, 1) : "–"}</td><td>${l.sec ? fmt(l.v / l.sec) : "–"}</td><td>${l.c || "–"}</td></tr>`).join("") +
       `</tbody></table><p class="nota2">Ordenado do maior para o menor percentual. ✓ = estado com pelo menos 1,5% dos válidos (a cláusula exige 9). <b>Projetado</b>: conta simples em que cada estado mantém o percentual atual da legenda até 100% das seções; estados que apuram mais tarde passam a pesar o que pesam no eleitorado. Não é previsão: o perfil das urnas que faltam pode ser diferente.${semDado.length ? " Sem votos ainda, fora da projeção: " + semDado.join(", ") + "." : ""}</p>`;
   }
 
