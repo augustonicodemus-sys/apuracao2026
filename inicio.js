@@ -44,7 +44,11 @@
           const soma = d.candidatos.reduce((s, c) => s + c.votos, 0) + Object.values(d.legenda).reduce((s, v) => s + v, 0);
           const res = M.calcular(d.candidatos, d.legenda, d.vagasTse || T.VAGAS[u], d.federacoes, d.vv > 0 && d.vv >= soma ? d.vv : null);
           const restantes = d.eleitoradoNaoApurado != null ? d.eleitoradoNaoApurado + d.vansj : (d.eleitorado || Infinity);
-          return { u, d, res, gar: M.garantidas(res, Number.isFinite(restantes) ? restantes : 1e12) };
+          // 100% das seções: o que resta são os votos sub judice, que pertencem a candidatos conhecidos
+          const gar = d.eleitoradoNaoApurado === 0 && res.qe
+            ? M.garantidasSubJudice(d.candidatos, d.legenda, d.vagasTse || T.VAGAS[u], d.federacoes, d.vv > 0 && d.vv >= soma ? d.vv : null, d.subJudice)
+            : M.garantidas(res, Number.isFinite(restantes) ? restantes : 1e12);
+          return { u, d, res, gar };
         } catch (e) { return { u, erro: e.message }; }
       }));
       ultimo = consolidar(ufs);
@@ -73,7 +77,8 @@
     const linhas = {};
     const L = (id) => (linhas[id] = linhas[id] || { id, membros: new Set(), atual: 0, agora: 0, garantidas: 0, agoraPorPartido: {}, votos: 0, ufs15: 0, ufsCad: new Set() });
     for (const [p, n] of Object.entries(BANCADA_ATUAL.p)) { const x = L(legOf(p)); x.atual += n; x.membros.add(T.normSigla(p)); }
-    let secoes = 0, nSec = 0, tsSum = 0, stSum = 0, distribuidas = 0, garantidas = 0, validosBR = 0;
+    let secoes = 0, nSec = 0, tsSum = 0, stSum = 0, distribuidas = 0, garantidas = 0, validosBR = 0, sjFinal = 0;
+    const risco = []; // cadeiras que ainda podem mudar por candidatos sub judice (só com 100% das seções)
     const candidatos = [], porUf = [];
     for (const r of ok) {
       const te = r.d.eleitorado || 0, na = r.d.eleitoradoNaoApurado;
@@ -98,12 +103,14 @@
         x.agoraPorPartido[c.partido] = (x.agoraPorPartido[c.partido] || 0) + 1; distribuidas++;
       }
       for (const [id, n] of Object.entries(r.gar.porLegenda)) { L(id).garantidas += n; garantidas += n; }
+      if (r.gar.emRisco) { sjFinal++; for (const [id, n] of Object.entries(r.gar.emRisco)) risco.push({ u: r.u, id, n }); }
       for (const c of r.d.candidatos) if (c.votos > 0) candidatos.push({ ...c, uf: r.u, qe: r.res.qe });
     }
     for (const id of Object.keys(FED_RESERVA)) if (linhas[id]) for (const m of FED_RESERVA[id]) linhas[id].membros.add(m);
     candidatos.sort((a, b) => b.votos - a.votos || a.nome.localeCompare(b.nome));
     return {
       linhas: Object.values(linhas), porUf, distribuidas, garantidas, validosBR, falhas: ufs.length - ok.length,
+      risco, finalSJ: ok.length > 0 && sjFinal === ok.length,
       secoes: tsSum ? stSum / tsSum * 100 : (nSec ? secoes / nSec : 0), top: candidatos.slice(0, 20), comVotos: candidatos.length > 0,
     };
   }
@@ -142,7 +149,16 @@
     $("#camara").innerHTML = hemiciclo(R.linhas, modo);
     $("#k-secoes").textContent = R.secoes.toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + "%";
     $("#k-agora").textContent = `${TOTAL}`;
-    $("#k-gar").textContent = `${R.garantidas}`;
+    const nRisco = R.risco.reduce((s, x) => s + x.n, 0);
+    $("#k-gar").innerHTML = R.finalSJ && nRisco ? `${R.garantidas}<sup class="ast">*</sup><small class="kpi-sub">${nRisco} ainda ${nRisco === 1 ? "pode" : "podem"} mudar (sub judice)</small>` : `${R.garantidas}`;
+    const nota = $("#nota-gar");
+    if (nota) {
+      nota.hidden = !(R.finalSJ && nRisco);
+      if (!nota.hidden) {
+        const lst = R.risco.map((x) => `${x.u} (${x.n > 1 ? x.n + " de " : ""}${esc(nomeLeg(x.id))})`).join(", ");
+        nota.innerHTML = `<b>*</b> Com 100% das seções totalizadas, ${R.garantidas} das ${TOTAL} cadeiras já não mudam. ${nRisco === 1 ? "A outra ainda pode mudar" : `As outras ${nRisco} ainda podem mudar`} se a Justiça Eleitoral validar votos hoje anulados <i>sub judice</i> (candidatos ou partidos com registro ainda em julgamento): ${lst}. Para chegar a esse número, recalculamos cada estado como se esses registros fossem aprovados, um a um ou em conjunto.`;
+      }
+    }
     $("#nota-camara").textContent = !R.comVotos ? "A apuração ainda não começou: o hemiciclo mostra a bancada atual. Quando os votos chegarem, ele passa a mostrar quem estaria eleito agora." :
       (R.falhas ? `${R.falhas} estado(s) não responderam nesta atualização; os totais estão incompletos.` : "");
 

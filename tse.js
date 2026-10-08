@@ -43,16 +43,18 @@
     const cg = cargos.find((c) => String(c.cd) === String(cargo)) || cargos[0];
     const fedPorNum = {}, federacoes = {};
     for (const f of cg.fed || []) { const id = nomeFed(f); fedPorNum[String(f.n)] = id; federacoes[id] = []; }
-    const candidatos = [], legenda = {}, partidos = {};
+    const candidatos = [], legenda = {}, partidos = {}, subJudice = [];
     for (const a of cg.agr || []) for (const p of a.par || []) {
       const sg = normSigla(p.sg || "");
       const nfed = String(p.nfed || "");
       if (nfed && fedPorNum[nfed]) federacoes[fedPorNum[nfed]].push(sg);
       legenda[sg] = num(p.tvtl);
+      // partido inteiro sub judice (DRAP em julgamento): os votos de legenda também ficam anulados
+      if (/anulad/i.test(String(p.dvt || "")) && /sub ?j/i.test(String(p.dvt || "")) && num(p.tval) > 0) subJudice.push({ nome: "Legenda " + sg, urna: "Legenda " + sg, numero: String(p.n || ""), partido: sg, votos: num(p.tval), legenda: true });
       partidos[sg] = { nome: p.nm || sg, numero: String(p.n || "") };
       for (const k of p.cand || []) {
         const dvt = String(k.dvt || ""); // "Anulado sub judice": votos não contam; "Válido (legenda)": vão para a legenda
-        if (/anulad/i.test(dvt)) continue;
+        if (/anulad/i.test(dvt)) { if (/sub ?j/i.test(dvt) && num(k.vap) > 0) subJudice.push({ nome: titulo(k.nm || k.nmu || ""), urna: titulo(k.nmu || k.nm || ""), numero: String(k.n || ""), partido: sg, votos: num(k.vap), situacaoTse: String(k.st || "") }); continue; }
         if (/legenda/i.test(dvt)) { legenda[sg] += num(k.vap); continue; }
         candidatos.push({ nome: titulo(k.nm || k.nmu || ""), urna: titulo(k.nmu || k.nm || ""), numero: String(k.n || ""), partido: sg, votos: num(k.vap), situacaoTse: String(k.st || "") });
       }
@@ -60,7 +62,7 @@
     for (const k of Object.keys(federacoes)) if (!federacoes[k].length) delete federacoes[k];
     const s = d.s || {}, v = d.v || {}, e = d.e || {};
     return {
-      candidatos, legenda, partidos, federacoes,
+      candidatos, legenda, partidos, federacoes, subJudice,
       vagasTse: num(cg.nv), qeTse: num(cg.qe),
       pst: s.pst || d.pst || "", secoesTotal: num(s.ts), secoesTot: num(s.st), vv: num(v.vv || d.vv), vansj: num(v.vansj),
       eleitorado: num(e.te), eleitoradoNaoApurado: e.esnt != null ? num(e.esnt) : null,

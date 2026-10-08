@@ -159,6 +159,43 @@
     return out;
   }
 
+  /**
+   * Garantidas com 100% das seções totalizadas. O único voto ainda em aberto é o de candidatos com
+   * registro sub judice (votos "anulados sub judice", que podem ser validados depois). Cada um
+   * pertence a um candidato e a uma legenda conhecidos, então a UF é recalculada validando esses
+   * candidatos: todas as combinações até 10 candidatos; acima disso, todos juntos, cada um sozinho
+   * e cada legenda sozinha. Cada legenda tem garantido o mínimo de cadeiras entre os cenários.
+   * subJudice: [{nome, numero, partido, votos, legenda?}] (legenda: true = votos de legenda de partido
+   * com DRAP sub judice); validos como em calcular (null = soma).
+   * Retorna { porLegenda, total, emRisco: {id: n}, nRisco, nSubJudice, votosSubJudice, exaustivo }.
+   */
+  function garantidasSubJudice(candidatos, legendaVotos, vagas, federacoes, validos, subJudice) {
+    const sj = (subJudice || []).filter((c) => c.votos > 0);
+    const clone = (lst) => lst.map((c) => ({ ...c }));
+    const cad = (r) => { const m = {}; for (const L of Object.values(r.legendas)) if (L.cadeiras) m[L.id] = L.cadeiras; return m; };
+    const roda = (extra) => {
+      const add = extra.reduce((s, c) => s + c.votos, 0);
+      const leg = { ...(legendaVotos || {}) };
+      for (const c of extra) if (c.legenda) leg[c.partido] = (Number(leg[c.partido]) || 0) + c.votos;
+      return cad(calcular(clone(candidatos).concat(clone(extra.filter((c) => !c.legenda))), leg, vagas, federacoes, validos == null ? null : validos + add));
+    };
+    const base = roda([]), min = { ...base };
+    const exaustivo = sj.length <= 10, cen = [];
+    if (exaustivo) { for (let mask = 1; mask < (1 << sj.length); mask++) cen.push(sj.filter((_, i) => (mask >> i) & 1)); }
+    else {
+      cen.push(sj); for (const c of sj) cen.push([c]);
+      const porPart = {}; for (const c of sj) (porPart[c.partido] = porPart[c.partido] || []).push(c);
+      for (const g of Object.values(porPart)) if (g.length > 1) cen.push(g);
+    }
+    for (const extra of cen) { const m = roda(extra); for (const k of Object.keys(min)) min[k] = Math.min(min[k], m[k] || 0); }
+    const out = { porLegenda: {}, total: 0, emRisco: {}, nRisco: 0, nSubJudice: sj.length, votosSubJudice: sj.reduce((s, c) => s + c.votos, 0), exaustivo };
+    for (const [k, n] of Object.entries(base)) {
+      if (min[k] > 0) { out.porLegenda[k] = min[k]; out.total += min[k]; }
+      if (min[k] < n) { out.emRisco[k] = n - min[k]; out.nRisco += n - min[k]; }
+    }
+    return out;
+  }
+
   /* ---------------- eleições majoritárias (Presidente, Governador, Senador) ----------------
    * cands: [{votos, ...}] em qualquer ordem; validos: votos válidos já apurados;
    * restantes: teto de votos ainda possíveis por candidato (eleitorado não apurado).
@@ -204,5 +241,5 @@
 
   function fmt(n) { if (n == null) return "-"; return (Math.round(n) || 0).toLocaleString("pt-BR"); }
 
-  return { calcular, fila, garantidas, majoritaria, clausula, CLAUSULA, quocienteEleitoral, fmt };
+  return { calcular, fila, garantidas, garantidasSubJudice, majoritaria, clausula, CLAUSULA, quocienteEleitoral, fmt };
 });
