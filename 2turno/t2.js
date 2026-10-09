@@ -187,6 +187,7 @@
     $("#turno1").innerHTML = barras1(corrida, d1) + `<p class="nota">Votos válidos no 1º turno: ${fmt(p.vv)}.${sj} Fonte: TSE, totalização final.</p>`;
     $("#titulo-jogo").textContent = a.iniciou ? "Como chegaram ao 2º turno" : "O que está em jogo";
     if (ufs) renderEstados(corrida, ufs, a.iniciou);
+    if (window.MapaT2) MapaT2.atualizar({ corrida, uf: CFG.pagina === "presidente" ? "BR" : CFG.uf, ufs, aoVivo: !!a.iniciou, horaEstado: d2 && a.iniciou ? d2.hora.trim() : "" });
   }
 
   function renderEstados(corrida, ufs, aoVivo) {

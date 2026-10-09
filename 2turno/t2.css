@@ -60,3 +60,35 @@
 .pg .outras a{display:inline-block;border:1px solid var(--line);border-radius:14px;padding:3px 10px;font-size:13px;text-decoration:none;color:var(--ink)}
 .pg .outras a:hover{background:var(--panel)}
 .pg .t1 .cb:not(.in) .cn b{font-weight:500}
+
+/* mapa */
+.pg .mapa-grade{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:18px;align-items:start}
+.pg .mapa-trilha{font-size:14px;margin:0 0 6px}
+.pg .mapa-trilha a{color:var(--ink)}
+.pg #mapa{position:relative;min-height:200px}
+.pg .mapa-svg{width:100%;height:auto;max-height:560px;display:block;margin:0 auto}
+.pg .mapa-svg path{stroke:#fff;stroke-width:1.2;vector-effect:non-scaling-stroke;cursor:pointer;transition:opacity .1s}
+.pg #mapa.mun .mapa-svg path{stroke-width:.35}
+.pg .mapa-svg path:hover{opacity:.82}
+.pg .mapa-svg path.sel{stroke:#16243A;stroke-width:2.2}
+.pg #mapa.mun .mapa-svg path.sel{stroke-width:2}
+.pg .mapa-leg{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:12.5px;color:var(--ink-2);margin-top:6px}
+.pg .mapa-leg .leg-t{color:var(--mute)}
+.pg .mapa-leg .leg-tons{flex-basis:100%;color:var(--mute);font-size:11.5px}
+.pg .mapa-turnos{margin-left:auto;display:inline-flex;border:1px solid var(--line);border-radius:6px;overflow:hidden}
+.pg .mapa-turnos button{font:inherit;font-size:12.5px;border:0;background:var(--paper);color:var(--ink-2);padding:5px 11px;cursor:pointer;border-left:1px solid var(--line)}
+.pg .mapa-turnos button:first-child{border-left:0}
+.pg .mapa-turnos button[aria-pressed="true"]{background:var(--ink);color:#fff}
+.pg .mapa-turnos button:disabled{opacity:.45;cursor:not-allowed}
+.pg #mapa-filtro{font:inherit;font-size:14px;width:100%;padding:6px 10px;border:1px solid var(--line);border-radius:6px;margin-bottom:8px}
+.pg .mapa-lista{max-height:430px;overflow:auto;border:1px solid var(--line);border-radius:6px}
+.pg .mapa-lista thead th{position:sticky;top:0;z-index:1}
+.pg #mapa-det{margin-top:12px}
+.pg #mapa-det h3{font-size:16px;margin:0 0 6px}
+.pg #mapa-det h3 small{font-weight:400;color:var(--mute);font-size:12px}
+.pg #mapa-det .cbs{--cl:200px;--cvw:120px}
+.mapa-dica{position:fixed;z-index:50;background:#16243A;color:#fff;font:13px/1.35 "Archivo",system-ui,sans-serif;padding:7px 10px;border-radius:6px;pointer-events:none;box-shadow:0 4px 14px rgba(0,0,0,.25);max-width:260px}
+.mapa-dica small{color:#C9D3E0}
+.mapa-dica .dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px}
+@media (max-width:1000px){.pg .mapa-grade{grid-template-columns:minmax(0,1fr)}.pg .mapa-lista{max-height:320px}}
+@media (max-width:560px){.pg #mapa-det .cbs{--cl:130px;--cvw:90px}}
