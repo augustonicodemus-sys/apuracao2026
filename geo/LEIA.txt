@@ -1,0 +1,1 @@
+Contornos do IBGE convertidos em SVG por gerar_geo.py
