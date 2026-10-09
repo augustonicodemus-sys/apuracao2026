@@ -1,0 +1,1 @@
+1o turno 2026 por municipio, gerado por gerar_mun2026.py
