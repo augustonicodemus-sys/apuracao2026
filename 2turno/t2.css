@@ -1,0 +1,62 @@
+/* 2º turno: complementos de ../estilo.css */
+.site-nav .turnos{display:flex;gap:0;border:1px solid #3A4A63;border-radius:16px;overflow:hidden;margin-right:10px}
+.site-nav .turnos a{display:block;color:var(--nav-ink);text-decoration:none;font-size:13px;font-weight:600;padding:5px 12px;white-space:nowrap}
+.site-nav .turnos a[aria-current="page"]{background:#F2C230;color:#16243A}
+.site-nav .turnos a:hover:not([aria-current]){background:#22324B}
+.site-nav a.item.uf{padding-left:5px;padding-right:5px}
+.site-nav .sep{color:var(--nav-mute);font-size:12px;padding:13px 2px 13px 8px;white-space:nowrap}
+@media (max-width:900px){.site-nav .turnos{margin:4px 0}.site-nav .sep{padding:9px 2px 9px 6px}}
+
+.pg .contagem{background:var(--dest);border-radius:8px;padding:9px 14px;font-size:14.5px;margin:0 0 12px}
+.pg .painel h2.grande{font-size:17px}
+
+/* duelo */
+.pg .duelo{padding:4px 0 2px}
+.pg .d-nomes{display:flex;justify-content:space-between;gap:16px;margin-bottom:8px}
+.pg .d-nomes>div{display:flex;flex-direction:column;min-width:0}
+.pg .d-nomes .d-b{text-align:right;align-items:flex-end}
+.pg .d-nomes b{font-size:16px}
+.pg .d-nomes .d-n{white-space:nowrap}
+@media (max-width:560px){.pg .d-nomes .d-n{white-space:normal}.pg .d-nomes b{font-size:14px}}
+.pg .d-nomes small{color:var(--mute);font-size:12.5px}
+.pg .d-p{font-size:clamp(30px,5vw,46px);font-weight:800;font-stretch:85%;line-height:1.05;letter-spacing:-.02em}
+.pg .d-barra{position:relative;display:flex;height:22px;border-radius:4px;overflow:hidden;background:var(--panel)}
+.pg .d-barra>div{height:100%}
+.pg .d-barra .d-meio{position:absolute;left:50%;top:-3px;bottom:-3px;border-left:2px dashed #fff;opacity:.9}
+.pg .d-barra.mini{height:10px;margin-top:6px}
+
+/* o que está em jogo */
+.pg .jogo{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.pg .jogo .j{background:var(--panel);border-radius:8px;padding:10px 12px}
+.pg .jogo .j span{display:block;font-size:12px;color:var(--mute)}
+.pg .jogo .j b{display:block;font-size:22px;font-weight:700;margin:2px 0}
+.pg .jogo .j small{font-size:12px;color:var(--ink-2)}
+.pg .nota.forte{font-size:14px;color:var(--ink);background:var(--panel);border-left:3px solid #F2C230;padding:8px 12px;border-radius:0 6px 6px 0}
+@media (max-width:900px){.pg .jogo{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.pg td.fr{color:var(--mute)}
+
+/* painel de cartões */
+.pg .cartoes{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-bottom:18px}
+.pg .cartao{display:block;border:1px solid var(--line);border-radius:10px;padding:12px 14px;color:var(--ink);text-decoration:none;background:var(--paper)}
+.pg .cartao:hover{border-color:var(--ink);box-shadow:0 2px 10px rgba(22,36,58,.08)}
+.pg .cartao.grande{grid-column:1/-1}
+.pg .cartao h3{margin:0 0 8px;font-size:14px;font-weight:700;color:var(--ink-2);text-transform:uppercase;letter-spacing:.03em}
+.pg .cartao.grande h3{font-size:16px}
+.pg .cartao .lin{display:flex;align-items:baseline;gap:6px;font-size:14px;padding:2px 0}
+.pg .cartao .lin small{color:var(--mute)}
+.pg .cartao .pc{margin-left:auto;font-size:17px}
+.pg .cartao.grande .pc{font-size:24px}
+.pg .cartao .rod{font-size:12px;color:var(--mute);margin:8px 0 2px}
+.pg .cartao .ver{font-size:13px;font-weight:600}
+@media (max-width:1100px){.pg .cartoes{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:560px){.pg .cartoes{grid-template-columns:minmax(0,1fr)}}
+
+/* texto fixo (lido pelo Google) */
+.pg .texto{max-width:80ch;font-size:15px;color:var(--ink-2)}
+.pg .texto h2{font-size:18px;color:var(--ink);margin:22px 0 6px}
+.pg .texto p{margin:0 0 10px}
+.pg .texto a{color:var(--ink)}
+.pg .outras{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 0;padding:0;list-style:none}
+.pg .outras a{display:inline-block;border:1px solid var(--line);border-radius:14px;padding:3px 10px;font-size:13px;text-decoration:none;color:var(--ink)}
+.pg .outras a:hover{background:var(--panel)}
+.pg .t1 .cb:not(.in) .cn b{font-weight:500}
