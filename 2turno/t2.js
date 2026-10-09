@@ -187,7 +187,7 @@
     $("#turno1").innerHTML = barras1(corrida, d1) + `<p class="nota">Votos válidos no 1º turno: ${fmt(p.vv)}.${sj} Fonte: TSE, totalização final.</p>`;
     $("#titulo-jogo").textContent = a.iniciou ? "Como chegaram ao 2º turno" : "O que está em jogo";
     if (ufs) renderEstados(corrida, ufs, a.iniciou);
-    if (window.MapaT2) MapaT2.atualizar({ corrida, uf: CFG.pagina === "presidente" ? "BR" : CFG.uf, ufs, aoVivo: !!a.iniciou, horaEstado: d2 && a.iniciou ? d2.hora.trim() : "" });
+    if (window.MapaT2) MapaT2.atualizar({ corrida, uf: CFG.pagina === "presidente" ? "BR" : CFG.uf, ufs, aoVivo: !!a.iniciou, horaEstado: d2 && a.iniciou ? d2.hora.trim() : "", total: { d1, d2 } });
   }
 
   function renderEstados(corrida, ufs, aoVivo) {
@@ -218,14 +218,19 @@
   async function carregarPainel() {
     status("atualizando…", "busy");
     try {
-      const res = await Promise.all(Object.entries(CORRIDAS).map(async ([uf, c]) => ({ uf, c, d1: await seguro(turno1(c, uf)), d2: await seguro(turno2(c, uf)) })));
+      const [res, ufs] = await Promise.all([
+        Promise.all(Object.entries(CORRIDAS).map(async ([uf, c]) => ({ uf, c, d1: await seguro(turno1(c, uf)), d2: await seguro(turno2(c, uf)) }))),
+        Promise.all(T.UFS.map(async (u) => ({ u, d1: await seguro(turno1(CORRIDAS.BR, u)), d2: await seguro(turno2(CORRIDAS.BR, u)) }))),
+      ]);
       renderPainel(res);
+      const br = res.find((r) => r.uf === "BR"), a = br.d2 ? D.apuracao(br.d2) : { iniciou: false };
+      if (window.MapaT2) MapaT2.atualizar({ corrida: CORRIDAS.BR, uf: "BR", ufs, aoVivo: !!a.iniciou, horaEstado: br.d2 && a.iniciou ? br.d2.hora.trim() : "", total: { d1: br.d1, d2: br.d2 } });
       status(`atualizado ${new Date().toLocaleTimeString("pt-BR")}`, "");
     } catch (e) { status("falha ao buscar no TSE: " + e.message, "erro"); }
     agendar(carregarPainel);
   }
   function renderPainel(res) {
-    $("#cartoes").innerHTML = res.map(({ uf, c, d1, d2 }) => {
+    const html = res.map(({ uf, c, d1, d2 }) => {
       const a = d2 ? D.apuracao(d2) : { iniciou: false };
       let corpo, rodape;
       if (a.iniciou) {
@@ -238,8 +243,10 @@
         corpo = [p.A, p.B].map((k) => { const q = quem(c, k); return `<div class="lin">${nomeHtml(q)}<b class="pc">${pct(k.votos / v)}</b></div>`; }).join("");
         rodape = `resultado do 1º turno · outros candidatos: ${pct(p.outros / v)}` + (d1.vansj > p.vv * 0.01 ? ` · ${fmt(d1.vansj)} votos sub judice fora dos válidos` : "");
       } else { corpo = '<p class="vazio">Sem dados do TSE agora.</p>'; rodape = ""; }
-      return `<a class="cartao${uf === "BR" ? " grande" : ""}" href="${c.url}${simQ}"><h3>${uf === "BR" ? "Presidente da República" : "Governador · " + esc(c.nome)}</h3>${corpo}<p class="rod">${rodape}</p><span class="ver">ver a disputa →</span></a>`;
-    }).join("");
+      return `<a class="cartao${uf === "BR" ? " grande" : ""}" href="${c.url}${simQ}"><h3>${uf === "BR" ? "Presidente da República" : "Governador · " + esc(c.nome)}</h3>${corpo}<p class="rod">${rodape}</p><span class="ver">${uf === "BR" ? "ver a disputa completa →" : "ver o mapa e a disputa →"}</span></a>`;
+    });
+    $("#cartao-pres").innerHTML = html[0];
+    $("#cartoes").innerHTML = html.slice(1).join("");
   }
 
   // ------------------------------------------------------------ comum

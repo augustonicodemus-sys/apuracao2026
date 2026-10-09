@@ -15,6 +15,7 @@
   const simAtivo = !!(S && S.ativo);
   const PARTIDO_COR = { PL: "#12286B", PT: "#D7263D", PSD: "#8B5E3C", MDB: "#A47551", UNIAO: "#3F8FD8", "UNIÃO": "#3F8FD8", PP: "#6FB4EA", REPUBLICANOS: "#8DCBF0", NOVO: "#FF7A00", PSOL: "#7B2CBF", PSB: "#2E8B57", PDT: "#5DAE6B", PSDB: "#6E7C91", PODE: "#7D8590", "MISSÃO": "#F2C230", MISSAO: "#F2C230", DC: "#B3DCF5", PCO: "#9CCC65", PSTU: "#6E9F3F", UP: "#4F9A5E", AVANTE: "#6B5B4E" };
   const curto = (nome) => { const w = String(nome).split(" "); return /^Profess/.test(w[0]) && w[1] ? w[1] : w[0]; };
+  const slug = (s) => String(s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
   const tituloNome = (s) => String(s).toLowerCase().replace(/(^|[\s'-])(\S)/g, (m, a, b) => a + b.toUpperCase()).replace(/\b(Da|De|Do|Das|Dos|E|D')\b/g, (m) => m.toLowerCase());
 
   let E = null; // estado da tela
@@ -32,8 +33,8 @@
     const ord = Object.entries(x.votos || {}).map(([n, v]) => ({ n, v })).sort((a, b) => b.v - a.v);
     const vv = x.vv || ord.reduce((s, c) => s + c.v, 0);
     if (!vv || !ord.length || !ord[0].v) return { vv: 0, ord };
-    const vant = (ord[0].v - (ord[1] ? ord[1].v : 0)) / vv;
-    return { vv, ord, lider: ord[0].n, vant };
+    const dif = ord[0].v - (ord[1] ? ord[1].v : 0);
+    return { vv, ord, lider: ord[0].n, vant: dif / vv, dif };
   }
   function corArea(x) {
     const a = analisa(x);
@@ -143,6 +144,7 @@
     try { geo = await M.carregar(BASE, br ? "br" : nivel.toLowerCase()); } catch (e) { $("#mapa").innerHTML = `<p class="aviso">${esc(e.message)}</p>`; return; }
     if (meu !== desenhando) return;
     valoresAtuais = vals;
+    if (E.selSlug && !br) { const c = Object.keys(vals).find((k) => slug(vals[k].nome) === E.selSlug); if (c) E.sel = c; E.selSlug = null; }
     svgAtual = M.desenhar($("#mapa"), geo, {
       rotulo: br ? "Mapa do Brasil por estado" : `Mapa de ${T.NOMES[nivel]} por município`,
       sel: E.sel,
@@ -160,14 +162,16 @@
     if (!x || !analisa(x).vv) return `<b>${esc(nome || "sem dados")}</b><br><small>sem votos apurados</small>`;
     const a = analisa(x);
     const linhas = a.ord.slice(0, 3).map((c) => { const q = quem(c.n, (x.nomes[c.n] || [])[1], (x.nomes[c.n] || [])[0]); return `<div><i class="dot" style="background:${q.cor}"></i>${esc(q.nome)} <b>${pct(c.v / a.vv)}</b></div>`; }).join("");
-    return `<b>${esc(nome)}</b>${x.pst && x.pst !== "100,00" ? ` <small>${x.pst}% das seções</small>` : ""}${linhas}`;
+    const ql = quem(a.lider, (x.nomes[a.lider] || [])[1], (x.nomes[a.lider] || [])[0]);
+    return `<b>${esc(nome)}</b>${x.pst && x.pst !== "100,00" ? ` <small>${x.pst}% das seções</small>` : ""}${linhas}<small>vantagem: ${esc(curto(ql.nome))} +${fmt(a.dif)} votos</small>`;
   }
 
   function trilha() {
     const el = $("#mapa-trilha"); if (!el) return;
     if (E.nivel === "BR") { el.innerHTML = "<b>Brasil</b>"; return; }
-    el.innerHTML = (E.podeBrasil ? `<a href="#" data-ir="BR">Brasil</a> › ` : "") + `<b>${esc(T.NOMES[E.nivel])}</b>`;
-    const a = el.querySelector("a"); if (a) a.addEventListener("click", (ev) => { ev.preventDefault(); abrir("BR"); });
+    const gov = E.podeBrasil && window.T2 && T2.GOV.includes(E.nivel) ? ` <a class="mapa-gov" href="governador-${E.nivel.toLowerCase()}.html${simAtivo ? "?sim=" + S.pct : ""}">Governador de ${E.nivel} no 2º turno →</a>` : "";
+    el.innerHTML = (E.podeBrasil ? `<a href="#" data-ir="BR">Brasil</a> › ` : "") + `<b>${esc(T.NOMES[E.nivel])}</b>` + gov;
+    const a = el.querySelector("a[data-ir]"); if (a) a.addEventListener("click", (ev) => { ev.preventDefault(); abrir("BR"); });
   }
 
   function legenda(vals) {
@@ -180,7 +184,7 @@
       return `<span><i class="dot" style="background:${q.cor}"></i>${esc(q.nome)} <b>${k}</b></span>`;
     }).join("");
     el.innerHTML = (itens ? `<span class="leg-t">${E.nivel === "BR" ? "Estados" : "Municípios"} em que lidera:</span>${itens}` : "") +
-      `<span class="leg-tons">tom mais forte = vantagem maior (<5 · 5–15 · >15 p.p.)</span>`;
+      `<span class="leg-tons">quanto mais forte a cor, mais folgada a vitória (diferença de menos de 5, de 5 a 15 ou de mais de 15 pontos percentuais)</span>`;
   }
 
   function lista(vals) {
@@ -196,10 +200,10 @@
     const t2 = E.turno === 2 && !br;
     const corpo = linhas.map(({ cod, x, a }) => {
       let lid = "–";
-      if (a.vv) { const q = quem(a.lider, (x.nomes[a.lider] || [])[1], (x.nomes[a.lider] || [])[0]); lid = `<i class="dot" style="background:${q.cor}"></i>${esc(curto(q.nome))} +${pp(a.vant)}`; }
+      if (a.vv) { const q = quem(a.lider, (x.nomes[a.lider] || [])[1], (x.nomes[a.lider] || [])[0]); lid = `<i class="dot" style="background:${q.cor}"></i>${esc(curto(q.nome))} +${fmt(a.dif)}`; }
       return `<tr data-cod="${cod}" class="clic${cod === E.sel ? " sel" : ""}"><td class="l">${esc(x.nome || cod)}</td><td>${vez(x, na)}</td><td>${vez(x, nb)}</td><td class="l">${lid}</td>${t2 ? `<td>${x.pst ? x.pst + "%" : "–"}</td><td>${x.hora ? esc(x.hora.split(" ").pop().slice(0, 5)) : "–"}</td>` : ""}</tr>`;
     }).join("");
-    el.innerHTML = `<table><thead><tr><th class="l">${br ? "Estado" : "Município"}</th><th>${esc(curto(qa.nome))}</th><th>${esc(curto(qb.nome))}</th><th class="l">Vantagem</th>${t2 ? "<th>Seções</th><th>TSE</th>" : ""}</tr></thead><tbody>${corpo || `<tr><td colspan="6" class="l">${filtro ? "nenhum município com esse nome" : "carregando…"}</td></tr>`}</tbody></table>`;
+    el.innerHTML = `<table><thead><tr><th class="l">${br ? "Estado" : "Município"}</th><th>${esc(curto(qa.nome))}</th><th>${esc(curto(qb.nome))}</th><th class="l">Vantagem (votos)</th>${t2 ? "<th>Seções</th><th>TSE</th>" : ""}</tr></thead><tbody>${corpo || `<tr><td colspan="6" class="l">${filtro ? "nenhum município com esse nome" : "carregando…"}</td></tr>`}</tbody></table>`;
     const f = $("#mapa-filtro"); if (f) f.hidden = br;
   }
 
@@ -235,7 +239,9 @@
   function urlEstado() {
     const q = new URLSearchParams(location.search);
     if (E.nivel !== "BR" && E.podeBrasil) q.set("mapa", E.nivel.toLowerCase()); else q.delete("mapa");
-    if (E.sel && E.nivel !== "BR") q.set("mun", E.sel); else q.delete("mun");
+    q.delete("mun");
+    const xs = E.sel && valoresAtuais[E.sel];
+    if (xs && E.nivel !== "BR") q.set("cidade", slug(xs.nome)); else q.delete("cidade");
     history.replaceState(null, "", location.pathname + (q.toString() ? "?" + q : "") + location.hash);
   }
   function botoesTurno() {
@@ -248,7 +254,7 @@
   }
 
   // ------------------------------------------------------------ entrada
-  function atualizar({ corrida, uf, ufs, aoVivo, horaEstado }) {
+  function atualizar({ corrida, uf, ufs, aoVivo, horaEstado, total }) {
     const primeira = !E;
     if (primeira) {
       const q = new URLSearchParams(location.search);
@@ -256,7 +262,7 @@
       let nivel = podeBrasil ? "BR" : uf;
       const pedido = (q.get("mapa") || "").toUpperCase();
       if (podeBrasil && T.NOMES[pedido]) nivel = pedido;
-      E = { corrida, podeBrasil, nivel, sel: q.get("mun") || null, turno: aoVivo ? 2 : 1, aoVivo, ufs, arquivoT1: corrida.cargo === 1 ? "presidente_t1" : "governador_t1" };
+      E = { corrida, podeBrasil, nivel, sel: q.get("mun") || null, selSlug: q.get("cidade") || null, total, turno: aoVivo ? 2 : 1, aoVivo, ufs, arquivoT1: corrida.cargo === 1 ? "presidente_t1" : "governador_t1" };
       document.querySelectorAll("#mapa-turnos button").forEach((b) => b.addEventListener("click", () => { E.turno = Number(b.dataset.t); botoesTurno(); abrir(E.nivel); }));
       $("#mapa-filtro").addEventListener("input", () => lista(valoresAtuais));
       $("#mapa-lista").addEventListener("click", (ev) => {
@@ -265,12 +271,32 @@
       });
     }
     const virouAoVivo = !E.aoVivo && aoVivo;
-    Object.assign(E, { ufs, aoVivo, horaEstado });
+    Object.assign(E, { ufs, aoVivo, horaEstado, total });
     if (virouAoVivo) E.turno = 2;
     botoesTurno();
     if (E.turno === 2 && E.nivel !== "BR") muniT2(E.nivel).then(() => desenharNivel());
     desenharNivel();
   }
+
+  // ------------------------------------------------------------ Story do Instagram
+  function somar(vals) { const v = {}, nomes = {}; let vv = 0; for (const x of Object.values(vals)) { vv += x.vv || 0; for (const [n, k] of Object.entries(x.votos || {})) v[n] = (v[n] || 0) + k; Object.assign(nomes, x.nomes || {}); } return { votos: v, vv, nomes }; }
+  window.StoryDados = function () {
+    if (!E) return { selo: "2º TURNO · 25/10", titulo: "Eleições 2026", sub: "", linhas: [], svg: null };
+    const cargo = E.corrida.cargo === 1 ? "Presidente" : "Governador";
+    const turno = E.turno === 1 ? "1º turno · resultado final" : "2º turno · apuração";
+    let x, titulo, arq;
+    if (E.sel && E.nivel !== "BR" && valoresAtuais[E.sel]) { x = valoresAtuais[E.sel]; titulo = `${x.nome} (${E.nivel})`; arq = slug(x.nome); }
+    else if (E.nivel === "BR") { const d = E.total && (E.turno === 1 ? E.total.d1 : E.total.d2); x = d ? deParse(d) : somar(valoresAtuais); titulo = "Brasil"; arq = "brasil"; }
+    else { const u = (E.ufs || []).find((y) => y.u === E.nivel); const d = u ? (E.turno === 1 ? u.d1 : u.d2) : (E.total && (E.turno === 1 ? E.total.d1 : E.total.d2)); x = d ? deParse(d) : somar(valoresAtuais); titulo = T.NOMES[E.nivel]; arq = slug(titulo); }
+    const a = analisa(x);
+    const linhas = a.ord.filter((c) => c.v > 0).slice(0, E.turno === 1 ? 3 : 2).map((c) => { const q = quem(c.n, (x.nomes[c.n] || [])[1], (x.nomes[c.n] || [])[0]); return { nome: q.nome, partido: q.partido, cor: q.cor, pct: a.vv ? c.v / a.vv : 0, votos: c.v }; });
+    const lider = linhas[0];
+    return {
+      selo: E.turno === 1 ? "1º TURNO 2026" : "2º TURNO · AO VIVO", titulo, sub: `${cargo} · ${turno}`, linhas, svg: document.querySelector("#mapa svg"), arquivo: arq,
+      rodape: E.nivel === "BR" ? "Veja o seu estado e a sua cidade:" : "Veja a sua cidade no mapa:",
+      textoCompartilhar: lider ? `${titulo}: ${lider.nome} ${(lider.pct * 100).toLocaleString("pt-BR", { maximumFractionDigits: 1 })}% para ${cargo.toLowerCase()} (${E.turno}º turno), no mapa do Radar Numérico` : document.title,
+    };
+  };
 
   window.MapaT2 = { atualizar };
 })();
