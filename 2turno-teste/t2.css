@@ -17,6 +17,7 @@
 .pg .d-nomes .d-b{text-align:right;align-items:flex-end}
 .pg .d-nomes b{font-size:16px}
 .pg .d-nomes .d-n{white-space:nowrap}
+@media (max-width:560px){.pg .d-nomes .d-n{white-space:normal}.pg .d-nomes b{font-size:14px}}
 .pg .d-nomes small{color:var(--mute);font-size:12.5px}
 .pg .d-p{font-size:clamp(30px,5vw,46px);font-weight:800;font-stretch:85%;line-height:1.05;letter-spacing:-.02em}
 .pg .d-barra{position:relative;display:flex;height:22px;border-radius:4px;overflow:hidden;background:var(--panel)}

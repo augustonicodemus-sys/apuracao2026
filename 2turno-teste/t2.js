@@ -129,7 +129,7 @@
     let frase;
     if (p.precisaOutros == null) frase = "";
     else if (p.precisaOutros > 1) frase = `Mesmo que levasse <b>todos</b> os votos dos outros candidatos, ${esc(qb.nome)} ainda ficaria ${fmt(p.dif - p.outros)} votos atrás. Para virar, precisa também de votos de quem se absteve, votou branco ou nulo, ou de quem votou em ${esc(qa.nome)} no 1º turno.`;
-    else frase = `Se todos repetirem o voto do 1º turno e quem votou nos outros candidatos escolher um dos dois, ${esc(qb.nome)} precisa de <b>${pct(p.precisaOutros)}</b> desses votos para empatar. ${esc(qa.nome)} vence com mais de ${pct(1 - p.precisaOutros)}.`;
+    else frase = `Se todos repetirem o voto do 1º turno e quem votou nos outros candidatos escolher um dos dois, ${esc(qb.nome)} precisa de <b>${pct(p.precisaOutros)}</b> desses votos para empatar; a ${esc(qa.nome)} basta mais de ${pct(1 - p.precisaOutros)} deles.`;
     return `<div class="jogo">
       <div class="j"><span>Diferença no 1º turno</span><b>${fmt(p.dif)}</b><small>a favor de ${esc(qa.nome)} · ${pct(p.dif / (p.vv || 1))} dos válidos</small></div>
       <div class="j"><span>Votos dos outros candidatos</span><b>${fmt(p.outros)}</b><small>${pct(p.outros / (p.vv || 1))} dos válidos · eleitores sem candidato no 2º turno</small></div>
