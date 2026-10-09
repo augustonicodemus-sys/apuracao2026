@@ -7,20 +7,22 @@
   const INICIO = new Date("2026-10-25T17:00:00-03:00"); // fechamento das urnas (horário de Brasília)
   const VIGIA = new Date("2026-10-25T16:30:00-03:00"); // a partir daqui as páginas se atualizam sozinhas
 
-  // finalistas: número → [nome, partido, cor]
+  // finalistas, na ordem do 1º turno: [número, nome, partido, cor]
   const CORRIDAS = {
-    BR: { cargo: 1, e1: 6257, e2: 6258, nome: "Brasil", titulo: "Presidente", url: "presidente.html", fin: { 22: ["Flávio Bolsonaro", "PL", "#12286B"], 13: ["Lula", "PT", "#D7263D"] } },
-    AC: { cargo: 3, e1: 6259, e2: 6260, fin: { 11: ["Mailza Assis", "PP", "#2F6FB8"], 10: ["Alan Rick", "Republicanos", "#62B6E2"] } },
-    AM: { cargo: 3, e1: 6259, e2: 6260, fin: { 55: ["Omar Aziz", "PSD", "#8B5E3C"], 22: ["Professora Maria do Carmo", "PL", "#12286B"] } },
-    DF: { cargo: 3, e1: 6259, e2: 6260, fin: { 11: ["Celina Leão", "PP", "#3F8FD8"], 13: ["Leandro Grass", "PT", "#D7263D"] } },
-    ES: { cargo: 3, e1: 6259, e2: 6260, fin: { 10: ["Lorenzo Pazolini", "Republicanos", "#3F8FD8"], 15: ["Ricardo Ferraço", "MDB", "#A47551"] } },
-    RJ: { cargo: 3, e1: 6259, e2: 6260, fin: { 22: ["Douglas Ruas", "PL", "#12286B"], 55: ["Eduardo Paes", "PSD", "#8B5E3C"] } },
-    RN: { cargo: 3, e1: 6259, e2: 6260, fin: { 44: ["Allyson", "União", "#3F8FD8"], 13: ["Cadu de Lula", "PT", "#D7263D"] } },
-    TO: { cargo: 3, e1: 6259, e2: 6260, fin: { 44: ["Professora Dorinha", "União", "#3F8FD8"], 45: ["Vicentinho Júnior", "PSDB", "#6E7C91"] } },
+    BR: { cargo: 1, e1: 6257, e2: 6258, nome: "Brasil", titulo: "Presidente", url: "presidente.html", fin: [["22", "Flávio Bolsonaro", "PL", "#12286B"], ["13", "Lula", "PT", "#D7263D"]] },
+    AC: { cargo: 3, e1: 6259, e2: 6260, fin: [["11", "Mailza Assis", "PP", "#2F6FB8"], ["10", "Alan Rick", "Republicanos", "#62B6E2"]] },
+    AM: { cargo: 3, e1: 6259, e2: 6260, fin: [["55", "Omar Aziz", "PSD", "#8B5E3C"], ["22", "Professora Maria do Carmo", "PL", "#12286B"]] },
+    DF: { cargo: 3, e1: 6259, e2: 6260, fin: [["11", "Celina Leão", "PP", "#3F8FD8"], ["13", "Leandro Grass", "PT", "#D7263D"]] },
+    ES: { cargo: 3, e1: 6259, e2: 6260, fin: [["10", "Lorenzo Pazolini", "Republicanos", "#3F8FD8"], ["15", "Ricardo Ferraço", "MDB", "#A47551"]] },
+    RJ: { cargo: 3, e1: 6259, e2: 6260, fin: [["22", "Douglas Ruas", "PL", "#12286B"], ["55", "Eduardo Paes", "PSD", "#8B5E3C"]] },
+    RN: { cargo: 3, e1: 6259, e2: 6260, fin: [["44", "Allyson", "União", "#3F8FD8"], ["13", "Cadu de Lula", "PT", "#D7263D"]] },
+    TO: { cargo: 3, e1: 6259, e2: 6260, fin: [["44", "Professora Dorinha", "União", "#3F8FD8"], ["45", "Vicentinho Júnior", "PSDB", "#6E7C91"]] },
   };
+  for (const c of Object.values(CORRIDAS)) { c.nums = c.fin.map((f) => f[0]); c.fin = Object.fromEntries(c.fin.map(([n, ...r]) => [n, r])); }
   for (const [uf, c] of Object.entries(CORRIDAS)) if (uf !== "BR") { c.nome = T.NOMES[uf]; c.titulo = "Governador · " + uf; c.url = "governador-" + uf.toLowerCase() + ".html"; }
   const GOV = Object.keys(CORRIDAS).filter((u) => u !== "BR");
 
+  const SIGLA = { MISSAO: "Missão", UNIAO: "União", PCDOB: "PCdoB", REPUBLICANOS: "Republicanos", SOLIDARIEDADE: "Solidariedade", CIDADANIA: "Cidadania", AVANTE: "Avante", DEMOCRATA: "Democrata", AGIR: "Agir", "S/PARTIDO": "sem partido" };
   const $ = (s) => document.querySelector(s);
   const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
   const fmt = (n) => (Math.round(n) || 0).toLocaleString("pt-BR");
@@ -32,7 +34,7 @@
   // nome, partido e cor de um candidato (finalista conhecido, ou o que vier do TSE)
   function quem(corrida, c) {
     const f = corrida.fin[String(c.numero)];
-    return f ? { nome: f[0], partido: f[1], cor: f[2] } : { nome: c.urna, partido: c.partido, cor: "#9AA3AE" };
+    return f ? { nome: f[0], partido: f[1], cor: f[2] } : { nome: c.urna, partido: SIGLA[c.partido] || c.partido, cor: "#9AA3AE" };
   }
 
   // ------------------------------------------------------------ coleta
@@ -80,8 +82,8 @@
     const qa = quem(corrida, a.A), qb = quem(corrida, a.B), v = a.vv || 1;
     const pa = a.A.votos / v, pb = a.B.votos / v;
     return `<div class="duelo">
-      <div class="d-nomes"><div class="d-a">${nomeHtml(qa)}<span class="d-p" style="color:${qa.cor}">${pct(pa)}</span><small>${fmt(a.A.votos)} votos</small></div>
-      <div class="d-b">${nomeHtml(qb)}<span class="d-p" style="color:${qb.cor}">${pct(pb)}</span><small>${fmt(a.B.votos)} votos</small></div></div>
+      <div class="d-nomes"><div class="d-a"><span class="d-n">${nomeHtml(qa)}</span><span class="d-p" style="color:${qa.cor}">${pct(pa)}</span><small>${fmt(a.A.votos)} votos</small></div>
+      <div class="d-b"><span class="d-n">${nomeHtml(qb)}</span><span class="d-p" style="color:${qb.cor}">${pct(pb)}</span><small>${fmt(a.B.votos)} votos</small></div></div>
       <div class="d-barra" role="img" aria-label="${esc(qa.nome)} ${pct(pa)}, ${esc(qb.nome)} ${pct(pb)}"><div style="width:${(pa * 100).toFixed(3)}%;background:${qa.cor}"></div><div style="width:${(pb * 100).toFixed(3)}%;background:${qb.cor}"></div><i class="d-meio"></i></div>
     </div>`;
   }
@@ -110,7 +112,7 @@
 
   // 1º turno: todos os candidatos, finalistas em destaque
   function barras1(corrida, d) {
-    const p = D.preTurno(d, Object.keys(corrida.fin));
+    const p = D.preTurno(d, corrida.nums);
     const v = p.vv || 1, max = Math.max(...p.todos.map((c) => c.votos), 1) / v;
     return `<div class="cbs t1">` + p.todos.map((c) => {
       const fin = !!corrida.fin[String(c.numero)], q = quem(corrida, c);
@@ -121,7 +123,7 @@
   }
 
   function emJogo(corrida, d) {
-    const p = D.preTurno(d, Object.keys(corrida.fin));
+    const p = D.preTurno(d, corrida.nums);
     const qa = quem(corrida, p.A), qb = quem(corrida, p.B);
     const bn = d.brancos + d.nulos;
     let frase;
@@ -137,7 +139,7 @@
   }
 
   function comparaTurnos(corrida, d1, a) { // finalistas: 1º turno × 2º turno
-    const p = D.preTurno(d1, Object.keys(corrida.fin));
+    const p = D.preTurno(d1, corrida.nums);
     const linhas = [p.A, p.B].map((c1) => {
       const q = quem(corrida, c1), c2 = a.ordem.find((c) => String(c.numero) === String(c1.numero));
       const v2 = c2 ? c2.votos : 0;
@@ -165,7 +167,7 @@
 
   function renderDisputa({ corrida, d1, d2, ufs }) {
     const a = d2 ? D.apuracao(d2) : { iniciou: false };
-    const p = D.preTurno(d1, Object.keys(corrida.fin));
+    const p = D.preTurno(d1, corrida.nums);
     const qa = quem(corrida, p.A), qb = quem(corrida, p.B);
     // cabeçalho
     $("#k-secoes").textContent = d2 && a.iniciou ? d2.pst + "%" : "–";
@@ -181,13 +183,14 @@
       ao.hidden = true; $("#painel-compara").hidden = true;
     }
     $("#jogo").innerHTML = emJogo(corrida, d1);
-    $("#turno1").innerHTML = barras1(corrida, d1) + `<p class="nota">Votos válidos no 1º turno: ${fmt(p.vv)}. Fonte: TSE, totalização final.</p>`;
+    const sj = d1.vansj ? ` ${fmt(d1.vansj)} votos de candidatos com registro em julgamento ("anulados sub judice") não entram nos válidos.` : "";
+    $("#turno1").innerHTML = barras1(corrida, d1) + `<p class="nota">Votos válidos no 1º turno: ${fmt(p.vv)}.${sj} Fonte: TSE, totalização final.</p>`;
     $("#titulo-jogo").textContent = a.iniciou ? "Como chegaram ao 2º turno" : "O que está em jogo";
     if (ufs) renderEstados(corrida, ufs, a.iniciou);
   }
 
   function renderEstados(corrida, ufs, aoVivo) {
-    const [na, nb] = Object.keys(corrida.fin);
+    const [na, nb] = corrida.nums;
     const qa = { ...quem(corrida, { numero: na }) }, qb = { ...quem(corrida, { numero: nb }) };
     const v = (d, n) => { const c = d && d.cands.find((x) => String(x.numero) === String(n)); return c ? c.votos : 0; };
     let linhas;
@@ -230,9 +233,9 @@
           `<div class="d-barra mini"><div style="width:${(a.A.votos / v * 100).toFixed(2)}%;background:${quem(c, a.A).cor}"></div><div style="width:${(a.B.votos / v * 100).toFixed(2)}%;background:${quem(c, a.B).cor}"></div><i class="d-meio"></i></div>`;
         rodape = `${d2.pst}% das seções · ${situacao(c, a, d2)}`;
       } else if (d1) {
-        const p = D.preTurno(d1, Object.keys(c.fin)), v = p.vv || 1;
+        const p = D.preTurno(d1, c.nums), v = p.vv || 1;
         corpo = [p.A, p.B].map((k) => { const q = quem(c, k); return `<div class="lin">${nomeHtml(q)}<b class="pc">${pct(k.votos / v)}</b></div>`; }).join("");
-        rodape = `resultado do 1º turno · outros candidatos: ${pct(p.outros / v)}`;
+        rodape = `resultado do 1º turno · outros candidatos: ${pct(p.outros / v)}` + (d1.vansj > p.vv * 0.01 ? ` · ${fmt(d1.vansj)} votos sub judice fora dos válidos` : "");
       } else { corpo = '<p class="vazio">Sem dados do TSE agora.</p>'; rodape = ""; }
       return `<a class="cartao${uf === "BR" ? " grande" : ""}" href="${c.url}${simQ}"><h3>${uf === "BR" ? "Presidente da República" : "Governador · " + esc(c.nome)}</h3>${corpo}<p class="rod">${rodape}</p><span class="ver">ver a disputa →</span></a>`;
     }).join("");
