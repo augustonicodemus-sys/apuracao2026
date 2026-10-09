@@ -108,3 +108,10 @@ body{margin:0;line-height:1.4}
 .pg .painel h2 .uf-sel select{font:inherit;font-size:14px;font-weight:600;padding:5px 8px;border:1px solid var(--line);border-radius:6px;background:var(--paper);color:var(--ink);max-width:240px}
 .pg tr.clic{cursor:pointer}
 .pg tr.clic:hover td{background:var(--dest)}
+
+/* chave 1º turno | 2º turno no menu */
+.site-nav .turnos{display:flex;border:1px solid #3A4A63;border-radius:16px;overflow:hidden;margin-right:10px}
+.site-nav .turnos a{display:block;color:var(--nav-ink);text-decoration:none;font-size:13px;font-weight:600;padding:5px 12px;white-space:nowrap}
+.site-nav .turnos a[aria-current="page"]{background:#F2C230;color:#16243A}
+.site-nav .turnos a:hover:not([aria-current]){background:#22324B}
+@media (max-width:900px){.site-nav .turnos{margin:4px 0}}
