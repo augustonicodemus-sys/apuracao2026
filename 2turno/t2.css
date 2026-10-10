@@ -168,3 +168,12 @@
 @media (max-width:560px){.pg .turno-chave{max-width:none}.pg .turno-chave button{font-size:16px}}
 @media (max-width:560px){.pg #turno1 .cbs{--cl:112px;--cvw:120px}}
 .pg .kpis-t2{margin:0 0 10px}
+/* barra de seções apuradas (segue a chave de turno) */
+.pg .sec-barra{max-width:520px;margin:0 0 12px}
+.pg .sb-t{display:flex;justify-content:space-between;align-items:baseline;font-size:13px;color:var(--ink-2);margin-bottom:4px}
+.pg .sb-t b{font-size:18px;color:var(--ink);font-weight:800}
+.pg .sb-trilho{height:12px;border-radius:6px;background:var(--panel);border:1px solid var(--line);overflow:hidden}
+.pg .sb-fill{height:100%;width:0;background:linear-gradient(90deg,#1E8A5A,#2FB574);transition:width .6s ease}
+@media (max-width:560px){.pg .sec-barra{max-width:none}}
+.mapa-lista .nm-c{display:none}
+@media (max-width:560px){.mapa-lista .nm-l{display:none}.mapa-lista .nm-c{display:inline;font-weight:600}}

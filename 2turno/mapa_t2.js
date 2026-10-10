@@ -56,7 +56,9 @@
     const out = {};
     for (const x of E.ufs || []) {
       const d = E.turno === 1 ? x.d1 : x.d2;
-      const v = deParse(d); if (!v) continue;
+      let v = deParse(d);
+      if (!v && E.turno === 2 && x.d1) v = { votos: {}, nomes: {}, vv: 0, pst: "0,00", te: x.d1.eleitorado }; // 2º turno antes da apuração: estado listado com 0%
+      if (!v) continue;
       out[codUF(x.u)] = Object.assign(v, { nome: T.NOMES[x.u], uf: x.u });
     }
     return out;
@@ -202,12 +204,13 @@
     linhas.sort((p, q) => (q.x.te || q.a.vv) - (p.x.te || p.a.vv));
     const vez = (x, n) => x.votos && x.vv ? pct((x.votos[n] || 0) / x.vv) : "–";
     const t2 = E.turno === 2 && !br;
+    const sec = (p) => { const n = parseFloat(String(p == null ? "" : p).replace(",", ".")); return isFinite(n) ? (n >= 100 ? "100%" : n.toLocaleString("pt-BR", { maximumFractionDigits: 1 }) + "%") : "–"; };
     const corpo = linhas.map(({ cod, x, a }) => {
       let lid = "–";
       if (a.vv) { const q = quem(a.lider, (x.nomes[a.lider] || [])[1], (x.nomes[a.lider] || [])[0]); lid = `<span title="${esc(q.nome)} +${fmt(a.dif)} votos"><i class="dot" style="background:${q.cor}"></i>+${fmtK(a.dif)}</span>`; }
-      return `<tr data-cod="${cod}" class="clic${cod === E.sel ? " sel" : ""}"><td class="l">${esc(x.nome || cod)}</td><td>${vez(x, na)}</td><td>${vez(x, nb)}</td><td class="l">${lid}</td>${t2 ? `<td>${x.pst ? x.pst + "%" : "–"}</td><td>${x.hora ? esc(x.hora.split(" ").pop().slice(0, 5)) : "–"}</td>` : ""}</tr>`;
+      return `<tr data-cod="${cod}" class="clic${cod === E.sel ? " sel" : ""}"><td class="l">${br && x.uf ? `<span class="nm-l">${esc(x.nome)}</span><span class="nm-c">${x.uf}</span>` : esc(x.nome || cod)}</td><td>${vez(x, na)}</td><td>${vez(x, nb)}</td><td class="l">${lid}</td>${br ? `<td>${sec(x.pst)}</td>` : ""}${t2 ? `<td>${x.pst ? x.pst + "%" : "–"}</td><td>${x.hora ? esc(x.hora.split(" ").pop().slice(0, 5)) : "–"}</td>` : ""}</tr>`;
     }).join("");
-    el.innerHTML = `<table><thead><tr><th class="l">${br ? "Estado" : "Município"}</th><th>${esc(curto(qa.nome))}</th><th>${esc(curto(qb.nome))}</th><th class="l" title="Diferença de votos para o 2º colocado; K = mil votos">Vantagem</th>${t2 ? "<th>Seções</th><th>TSE</th>" : ""}</tr></thead><tbody>${corpo || `<tr><td colspan="6" class="l">${filtro ? "nenhum município com esse nome" : E.turno === 2 && !E.aoVivo ? "a apuração do 2º turno começa às 17h de 25/10" : "carregando…"}</td></tr>`}</tbody></table>`;
+    el.innerHTML = `<table><thead><tr><th class="l">${br ? "Estado" : "Município"}</th><th>${esc(curto(qa.nome))}</th><th>${esc(curto(qb.nome))}</th><th class="l" title="Diferença de votos para o 2º colocado; K = mil votos">Vantagem</th>${br ? '<th title="Seções apuradas no estado">Seções</th>' : ""}${t2 ? "<th>Seções</th><th>TSE</th>" : ""}</tr></thead><tbody>${corpo || `<tr><td colspan="6" class="l">${filtro ? "nenhum município com esse nome" : E.turno === 2 && !E.aoVivo ? "a apuração do 2º turno começa às 17h de 25/10" : "carregando…"}</td></tr>`}</tbody></table>`;
     const f = $("#mapa-filtro"); if (f) f.hidden = br;
   }
 

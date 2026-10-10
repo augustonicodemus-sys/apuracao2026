@@ -176,8 +176,7 @@
     const p = D.preTurno(d1, corrida.nums);
     const qa = quem(corrida, p.A), qb = quem(corrida, p.B);
     // cabeçalho
-    $("#k-secoes").textContent = d2 && a.iniciou ? d2.pst + "%" : "–";
-    $("#k-situ").innerHTML = d2 ? situacao(corrida, a, d2) : '<span class="tag agora">aguardando votos</span>';
+    barraSecoes(d2);
     // bloco principal
     const ao = $("#ao-vivo");
     if (a.iniciou) {
@@ -232,6 +231,7 @@
       const br = res.find((r) => r.uf === "BR"), a = br.d2 ? D.apuracao(br.d2) : { iniciou: false };
       if (window.MapaT2) MapaT2.atualizar({ corrida: CORRIDAS.BR, uf: "BR", ufs, aoVivo: !!a.iniciou, horaEstado: br.d2 && a.iniciou ? br.d2.hora.trim() : "", total: { d1: br.d1, d2: br.d2 } });
       renderPainel(res);
+      barraSecoes(br.d2 || null);
       status(`atualizado ${new Date().toLocaleTimeString("pt-BR")}`, "");
     } catch (e) { status("falha ao buscar no TSE: " + e.message, "erro"); }
     agendar(carregarPainel);
@@ -288,6 +288,17 @@
     if (!el) { const ctl = $(".pg .ctl"); if (!ctl) return; ctl.insertAdjacentHTML("afterend", '<div class="cartoes" id="cartao-topo"></div>'); el = $("#cartao-topo"); }
     el.innerHTML = cartaoDuelo(corrida, d1, d2, CFG.pagina === "presidente" ? "Presidente da República" : "Governador · " + corrida.nome, false);
   }
+  // barra de seções apuradas (segue a chave: 1º turno = 100%; 2º turno = o que o TSE já totalizou)
+  let ultimoD2 = null;
+  function barraSecoes(d2) {
+    if (d2 !== undefined) ultimoD2 = d2;
+    const el = $("#sb-fill"), tx = $("#sb-pct"); if (!el || !tx) return;
+    const p = turnoAtual() === 1 ? 100 : (ultimoD2 && ultimoD2.pstNum) || 0;
+    el.style.width = p.toFixed(2) + "%";
+    tx.textContent = (p >= 100 ? "100" : p.toLocaleString("pt-BR", { minimumFractionDigits: p ? 2 : 0, maximumFractionDigits: 2 })) + "%";
+    const r = $("#sb-rot"); if (r) r.textContent = turnoAtual() === 1 ? "Seções apuradas · 1º turno" : "Seções apuradas · 2º turno";
+  }
+  window.addEventListener("t2-turno", () => { barraSecoes(); });
   window.addEventListener("t2-turno", () => { if (ultimoPainel) renderPainel(ultimoPainel); if (ultimo && CFG.pagina !== "painel") cartaoTopo(ultimo); });
 
   // ------------------------------------------------------------ comum
