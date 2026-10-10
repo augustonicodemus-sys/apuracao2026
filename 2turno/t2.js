@@ -267,7 +267,7 @@
     const pessoa = (L, cls) => `<div class="pp ${cls}">${foto(L.q)}<div class="pp-t"><span class="pp-n">${esc(L.q.nome)} <small>${esc(L.q.partido)}</small></span><b class="pp-p" style="color:${L.q.cor}">${pct(L.p)}</b></div></div>`;
     return `<${tag} class="cartao grande pres"${href}>${cab}
       <div class="pres-lados">${pessoa(n.lado[0], "pa")}<span class="pres-x" aria-hidden="true">×</span>${pessoa(n.lado[1], "pb")}</div>${barra(n.lado)}
-      <p class="rod">${n.rod}${link ? '<span class="ver">ver a disputa completa →</span>' : ""}</p></${tag}>`;
+      <p class="rod">${n.rod}</p></${tag}>`;
   }
   let ultimoPainel = null;
   function renderPainel(res) {

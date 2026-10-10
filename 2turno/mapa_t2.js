@@ -124,7 +124,7 @@
   function atualizarSub() {
     const sub = $("#mapa-sub"); if (!sub) return;
     const t = E.turno === 1 ? "1º turno · resultado final" : E.aoVivo ? "2º turno" : "2º turno · apuração a partir das 17h de 25/10";
-    if (E.nivel === "BR") { sub.textContent = `${t} · por estado · clique num estado para ver os municípios`; return; }
+    if (E.nivel === "BR") { sub.textContent = `${t} · clique no estado para ver municípios`; return; }
     let s = `${t} · por município`;
     if (E.turno === 2) {
       const c = cacheT2[E.nivel];
