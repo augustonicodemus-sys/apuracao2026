@@ -14,6 +14,8 @@
   const pp = (x) => (x * 100).toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + " p.p.";
   const simAtivo = !!(S && S.ativo);
   const PARTIDO_COR = { PL: "#12286B", PT: "#D7263D", PSD: "#8B5E3C", MDB: "#A47551", UNIAO: "#3F8FD8", "UNIÃO": "#3F8FD8", PP: "#6FB4EA", REPUBLICANOS: "#8DCBF0", NOVO: "#FF7A00", PSOL: "#7B2CBF", PSB: "#2E8B57", PDT: "#5DAE6B", PSDB: "#6E7C91", PODE: "#7D8590", "MISSÃO": "#F2C230", MISSAO: "#F2C230", DC: "#B3DCF5", PCO: "#9CCC65", PSTU: "#6E9F3F", UP: "#4F9A5E", AVANTE: "#6B5B4E" };
+  // vantagem compacta: até 999 votos o número exato; daí em diante em milhares ("+1.100K")
+  const fmtK = (n) => { n = Math.round(Math.abs(n)) || 0; return n < 1000 ? n.toLocaleString("pt-BR") : Math.round(n / 1000).toLocaleString("pt-BR") + "K"; };
   const curto = (nome) => { const w = String(nome).split(" "); return /^Profess/.test(w[0]) && w[1] ? w[1] : w[0]; };
   const slug = (s) => String(s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
   const tituloNome = (s) => String(s).toLowerCase().replace(/(^|[\s'-])(\S)/g, (m, a, b) => a + b.toUpperCase()).replace(/\b(Da|De|Do|Das|Dos|E|D')\b/g, (m) => m.toLowerCase());
@@ -168,6 +170,7 @@
 
   function trilha() {
     const el = $("#mapa-trilha"); if (!el) return;
+    el.classList.toggle("so-br", E.nivel === "BR");
     if (E.nivel === "BR") { el.innerHTML = "<b>Brasil</b>"; return; }
     const gov = E.podeBrasil && window.T2 && T2.GOV.includes(E.nivel) ? ` <a class="mapa-gov" href="governador-${E.nivel.toLowerCase()}.html${simAtivo ? "?sim=" + S.pct : ""}">Governador de ${E.nivel} no 2º turno →</a>` : "";
     el.innerHTML = (E.podeBrasil ? `<button type="button" class="volta-br" data-ir="BR" title="Voltar ao mapa do Brasil"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M7 3l6 1 4 3 4 2-1 4-4 3-2 5-4 1-2-4-3-2 1-4-3-3 2-4z" fill="currentColor"/></svg> Voltar ao Brasil</button> ` : "") + `<b>${esc(T.NOMES[E.nivel])}</b>` + gov;
@@ -200,10 +203,10 @@
     const t2 = E.turno === 2 && !br;
     const corpo = linhas.map(({ cod, x, a }) => {
       let lid = "–";
-      if (a.vv) { const q = quem(a.lider, (x.nomes[a.lider] || [])[1], (x.nomes[a.lider] || [])[0]); lid = `<i class="dot" style="background:${q.cor}"></i>${esc(curto(q.nome))} +${fmt(a.dif)}`; }
+      if (a.vv) { const q = quem(a.lider, (x.nomes[a.lider] || [])[1], (x.nomes[a.lider] || [])[0]); lid = `<span title="${esc(q.nome)} +${fmt(a.dif)} votos"><i class="dot" style="background:${q.cor}"></i>+${fmtK(a.dif)}</span>`; }
       return `<tr data-cod="${cod}" class="clic${cod === E.sel ? " sel" : ""}"><td class="l">${esc(x.nome || cod)}</td><td>${vez(x, na)}</td><td>${vez(x, nb)}</td><td class="l">${lid}</td>${t2 ? `<td>${x.pst ? x.pst + "%" : "–"}</td><td>${x.hora ? esc(x.hora.split(" ").pop().slice(0, 5)) : "–"}</td>` : ""}</tr>`;
     }).join("");
-    el.innerHTML = `<table><thead><tr><th class="l">${br ? "Estado" : "Município"}</th><th>${esc(curto(qa.nome))}</th><th>${esc(curto(qb.nome))}</th><th class="l">Vantagem (votos)</th>${t2 ? "<th>Seções</th><th>TSE</th>" : ""}</tr></thead><tbody>${corpo || `<tr><td colspan="6" class="l">${filtro ? "nenhum município com esse nome" : "carregando…"}</td></tr>`}</tbody></table>`;
+    el.innerHTML = `<table><thead><tr><th class="l">${br ? "Estado" : "Município"}</th><th>${esc(curto(qa.nome))}</th><th>${esc(curto(qb.nome))}</th><th class="l" title="Diferença de votos para o 2º colocado; K = mil votos">Vantagem</th>${t2 ? "<th>Seções</th><th>TSE</th>" : ""}</tr></thead><tbody>${corpo || `<tr><td colspan="6" class="l">${filtro ? "nenhum município com esse nome" : "carregando…"}</td></tr>`}</tbody></table>`;
     const f = $("#mapa-filtro"); if (f) f.hidden = br;
   }
 

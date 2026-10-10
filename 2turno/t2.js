@@ -21,11 +21,15 @@
   for (const c of Object.values(CORRIDAS)) { c.nums = c.fin.map((f) => f[0]); c.fin = Object.fromEntries(c.fin.map(([n, ...r]) => [n, r])); }
   for (const [uf, c] of Object.entries(CORRIDAS)) if (uf !== "BR") { c.nome = T.NOMES[uf]; c.titulo = "Governador · " + uf; c.url = "governador-" + uf.toLowerCase() + ".html"; }
   const GOV = Object.keys(CORRIDAS).filter((u) => u !== "BR");
+  // fotos oficiais de candidatura (TSE/DivulgaCand), recortadas em quadrado em img/
+  const FOTOS = { BR: { "22": "img/flavio-bolsonaro.webp", "13": "img/lula.webp" } };
+  for (const [uf, f] of Object.entries(FOTOS)) CORRIDAS[uf].fotos = f;
 
   const SIGLA = { MISSAO: "Missão", UNIAO: "União", PCDOB: "PCdoB", REPUBLICANOS: "Republicanos", SOLIDARIEDADE: "Solidariedade", CIDADANIA: "Cidadania", AVANTE: "Avante", DEMOCRATA: "Democrata", AGIR: "Agir", "S/PARTIDO": "sem partido" };
   const $ = (s) => document.querySelector(s);
   const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
   const fmt = (n) => (Math.round(n) || 0).toLocaleString("pt-BR");
+  const fmtK = (n) => { n = Math.round(Math.abs(n)) || 0; return n < 1000 ? n.toLocaleString("pt-BR") : Math.round(n / 1000).toLocaleString("pt-BR") + "K"; }; // vantagem compacta ("+1.100K")
   const pct = (x, d = 1) => { if (Math.abs(x - 0.5) < 0.0005) d = 2; return (x * 100).toLocaleString("pt-BR", { minimumFractionDigits: d, maximumFractionDigits: d }) + "%"; }; // perto de 50%: duas casas
   const num = (x) => T.num(x);
   const simAtivo = !!(S && S.ativo);
@@ -34,7 +38,7 @@
   // nome, partido e cor de um candidato (finalista conhecido, ou o que vier do TSE)
   function quem(corrida, c) {
     const f = corrida.fin[String(c.numero)];
-    return f ? { nome: f[0], partido: f[1], cor: f[2] } : { nome: c.urna, partido: SIGLA[c.partido] || c.partido, cor: "#9AA3AE" };
+    return f ? { nome: f[0], partido: f[1], cor: f[2], foto: (corrida.fotos || {})[String(c.numero)] || "" } : { nome: c.urna, partido: SIGLA[c.partido] || c.partido, cor: "#9AA3AE" };
   }
 
   // ------------------------------------------------------------ coleta
@@ -66,6 +70,7 @@
 
   // ------------------------------------------------------------ peças
   const dot = (cor) => `<i class="dot" style="background:${cor}"></i>`;
+  const foto = (q, cls) => q.foto ? `<img class="${cls || "foto"}" src="${q.foto}" alt="" width="44" height="44" loading="lazy" style="border-color:${q.cor}" onerror="this.style.visibility='hidden'">` : "";
   const nomeHtml = (q, peq) => `${dot(q.cor)}<b>${esc(q.nome)}</b>${peq ? "" : ` <small>${esc(q.partido)}</small>`}`;
 
   function contagem() {
@@ -74,7 +79,7 @@
     const ms = INICIO - Date.now();
     if (ms <= 0) { el.innerHTML = "<b>Urnas fechadas:</b> a apuração do 2º turno está em andamento."; return; }
     const dias = Math.floor(ms / 864e5), h = Math.floor(ms % 864e5 / 36e5), m = Math.floor(ms % 36e5 / 6e4);
-    el.innerHTML = `<b>2º turno: domingo, 25 de outubro.</b> As urnas fecham às 17h (horário de Brasília) e a apuração começa em seguida. Faltam <b>${dias ? dias + (dias > 1 ? " dias, " : " dia, ") : ""}${h} h ${String(m).padStart(2, "0")} min</b>.`;
+    el.innerHTML = `<b>2º turno: domingo, 25 de outubro.</b> <span class="cg-l">Urnas fecham às 17h (Brasília); a apuração começa em seguida. </span>Faltam <b>${dias ? dias + (dias > 1 ? " dias, " : " dia, ") : ""}${h} h ${String(m).padStart(2, "0")} min</b>.`;
   }
 
   // barra de duelo: dois lados, linha dos 50%
@@ -82,8 +87,8 @@
     const qa = quem(corrida, a.A), qb = quem(corrida, a.B), v = a.vv || 1;
     const pa = a.A.votos / v, pb = a.B.votos / v;
     return `<div class="duelo">
-      <div class="d-nomes"><div class="d-a"><span class="d-n">${nomeHtml(qa)}</span><span class="d-p" style="color:${qa.cor}">${pct(pa)}</span><small>${fmt(a.A.votos)} votos</small></div>
-      <div class="d-b"><span class="d-n">${nomeHtml(qb)}</span><span class="d-p" style="color:${qb.cor}">${pct(pb)}</span><small>${fmt(a.B.votos)} votos</small></div></div>
+      <div class="d-nomes"><div class="d-a"><span class="d-n">${foto(qa, "foto d-foto")}${nomeHtml(qa)}</span><span class="d-p" style="color:${qa.cor}">${pct(pa)}</span><small>${fmt(a.A.votos)} votos</small></div>
+      <div class="d-b"><span class="d-n">${nomeHtml(qb)}${foto(qb, "foto d-foto")}</span><span class="d-p" style="color:${qb.cor}">${pct(pb)}</span><small>${fmt(a.B.votos)} votos</small></div></div>
       <div class="d-barra" role="img" aria-label="${esc(qa.nome)} ${pct(pa)}, ${esc(qb.nome)} ${pct(pb)}"><div style="width:${(pa * 100).toFixed(3)}%;background:${qa.cor}"></div><div style="width:${(pb * 100).toFixed(3)}%;background:${qb.cor}"></div><i class="d-meio"></i></div>
     </div>`;
   }
@@ -201,16 +206,16 @@
         if (!d2) return `<tr class="fraca"><td class="l"><b>${u}</b> <small>${T.NOMES[u]}</small></td><td colspan="6" class="l">sem dados do 2º turno agora</td></tr>`;
         const va = v(d2, na), vb = v(d2, nb), s = va + vb || 1, a1 = v(d1, na), b1 = v(d1, nb), vv1 = d1 ? d1.vv || 1 : 1;
         const lid = va === vb ? "" : (va > vb ? qa : qb);
-        return `<tr><td class="l"><b>${u}</b> <small>${T.NOMES[u]}</small></td><td>${d2.pst || "–"}%</td><td><b>${va + vb ? pct(va / s) : "–"}</b></td><td><b>${va + vb ? pct(vb / s) : "–"}</b></td><td class="l">${lid ? dot(lid.cor) + fmt(Math.abs(va - vb)) : "–"}</td><td class="fr">${pct(a1 / vv1)}</td><td class="fr">${pct(b1 / vv1)}</td></tr>`;
+        return `<tr><td class="l"><b>${u}</b> <small>${T.NOMES[u]}</small></td><td>${d2.pst || "–"}%</td><td><b>${va + vb ? pct(va / s) : "–"}</b></td><td><b>${va + vb ? pct(vb / s) : "–"}</b></td><td class="l" title="${fmt(Math.abs(va - vb))} votos">${lid ? dot(lid.cor) + "+" + fmtK(va - vb) : "–"}</td><td class="fr">${pct(a1 / vv1)}</td><td class="fr">${pct(b1 / vv1)}</td></tr>`;
       }).join("");
-      $("#estados").innerHTML = `<table><thead><tr><th class="l">Estado</th><th>Seções</th>${cab("2º t.")}<th class="l">Vantagem</th>${cab("1º t.")}</tr></thead><tbody>${linhas}</tbody></table><p class="nota">2º turno: % dos votos válidos no estado. 1º turno: % dos válidos com todos os candidatos.</p>`;
+      $("#estados").innerHTML = `<table><thead><tr><th class="l">Estado</th><th>Seções</th>${cab("2º t.")}<th class="l" title="K = mil votos">Vantagem</th>${cab("1º t.")}</tr></thead><tbody>${linhas}</tbody></table><p class="nota">2º turno: % dos votos válidos no estado. 1º turno: % dos válidos com todos os candidatos.</p>`;
     } else {
       const ord = ufs.filter((x) => x.d1).sort((x, y) => y.d1.eleitorado - x.d1.eleitorado);
       linhas = ord.map(({ u, d1 }) => {
         const a1 = v(d1, na), b1 = v(d1, nb), vv1 = d1.vv || 1, out = vv1 - a1 - b1, dif = a1 - b1;
-        return `<tr><td class="l"><b>${u}</b> <small>${T.NOMES[u]}</small></td><td>${fmt(d1.eleitorado)}</td><td><b>${pct(a1 / vv1)}</b></td><td><b>${pct(b1 / vv1)}</b></td><td class="l">${dot(dif >= 0 ? qa.cor : qb.cor)}${fmt(Math.abs(dif))}</td><td>${pct(out / vv1)}</td><td>${fmt(out)}</td></tr>`;
+        return `<tr><td class="l"><b>${u}</b> <small>${T.NOMES[u]}</small></td><td>${fmt(d1.eleitorado)}</td><td><b>${pct(a1 / vv1)}</b></td><td><b>${pct(b1 / vv1)}</b></td><td class="l" title="${fmt(Math.abs(dif))} votos">${dot(dif >= 0 ? qa.cor : qb.cor)}+${fmtK(dif)}</td><td>${pct(out / vv1)}</td><td>${fmt(out)}</td></tr>`;
       }).join("");
-      $("#estados").innerHTML = `<table><thead><tr><th class="l">Estado</th><th>Eleitores</th>${cab("1º t.")}<th class="l">Vantagem</th><th title="Votos válidos dos candidatos eliminados">Outros</th><th>votos</th></tr></thead><tbody>${linhas}</tbody></table><p class="nota">Resultado final do 1º turno em cada estado, do maior para o menor eleitorado. "Outros": votos de quem ficou fora do 2º turno, ou seja, eleitores que vão escolher de novo.</p>`;
+      $("#estados").innerHTML = `<table><thead><tr><th class="l">Estado</th><th>Eleitores</th>${cab("1º t.")}<th class="l" title="K = mil votos">Vantagem</th><th title="Votos válidos dos candidatos eliminados">Outros</th><th>votos</th></tr></thead><tbody>${linhas}</tbody></table><p class="nota">Resultado final do 1º turno em cada estado, do maior para o menor eleitorado. "Outros": votos de quem ficou fora do 2º turno, ou seja, eleitores que vão escolher de novo.</p>`;
     }
   }
 
@@ -229,8 +234,25 @@
     } catch (e) { status("falha ao buscar no TSE: " + e.message, "erro"); }
     agendar(carregarPainel);
   }
+  // cartão do Presidente: uma faixa só, foto + nome + % de cada lado e a barra embaixo
+  function cartaoPres(c, d1, d2) {
+    const a = d2 ? D.apuracao(d2) : { iniciou: false };
+    let cand, vv, rod;
+    if (a.iniciou) { cand = a.ordem; vv = a.vv; rod = `${d2.pst}% das seções · ${situacao(c, a, d2)}`; }
+    else if (d1) { const p = D.preTurno(d1, c.nums); cand = d1.cands; vv = p.vv; rod = `resultado do 1º turno · outros candidatos: ${pct(p.outros / (vv || 1))}`; }
+    else return `<a class="cartao grande pres" href="${c.url}${simQ}"><h3>Presidente da República</h3><p class="vazio">Sem dados do TSE agora.</p></a>`;
+    const v = vv || 1;
+    const lado = c.nums.map((n) => { const k = cand.find((x) => String(x.numero) === n) || { numero: n, votos: 0 }; return { q: quem(c, k), p: k.votos / v }; });
+    const [A, B] = lado;
+    const pessoa = (L, cls) => `<div class="pp ${cls}">${foto(L.q)}<div class="pp-t"><span class="pp-n">${esc(L.q.nome)} <small>${esc(L.q.partido)}</small></span><b class="pp-p" style="color:${L.q.cor}">${pct(L.p)}</b></div></div>`;
+    return `<a class="cartao grande pres" href="${c.url}${simQ}"><h3>Presidente da República</h3>
+      <div class="pres-lados">${pessoa(A, "pa")}<span class="pres-x" aria-hidden="true">×</span>${pessoa(B, "pb")}</div>
+      <div class="d-barra mini" role="img" aria-label="${esc(A.q.nome)} ${pct(A.p)}, ${esc(B.q.nome)} ${pct(B.p)}"><div style="width:${(A.p * 100).toFixed(2)}%;background:${A.q.cor}"></div><div style="width:${(B.p * 100).toFixed(2)}%;background:${B.q.cor}"></div><i class="d-meio"></i></div>
+      <p class="rod">${rod}<span class="ver">ver a disputa completa →</span></p></a>`;
+  }
   function renderPainel(res) {
     const html = res.map(({ uf, c, d1, d2 }) => {
+      if (uf === "BR") return cartaoPres(c, d1, d2);
       const a = d2 ? D.apuracao(d2) : { iniciou: false };
       let corpo, rodape;
       if (a.iniciou) {

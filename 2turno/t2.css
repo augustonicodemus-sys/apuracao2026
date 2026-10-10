@@ -116,3 +116,42 @@
 .pg .volta-br{font:inherit;font-size:14px;font-weight:700;display:inline-flex;align-items:center;gap:6px;background:#F2C230;color:#16243A;border:0;border-radius:18px;padding:6px 14px;margin-right:8px;cursor:pointer}
 .pg .volta-br:hover{background:#E5B41F}
 .pg .mapa-trilha{display:flex;align-items:center;flex-wrap:wrap;gap:6px}
+
+/* fotos e cartão compacto do Presidente (10/10) */
+.pg .foto{width:44px;height:44px;border-radius:50%;object-fit:cover;object-position:50% 20%;border:2px solid var(--line);background:var(--panel);flex:none}
+.pg .d-foto{width:36px;height:36px;vertical-align:middle;margin:0 8px}
+.pg .d-a .d-foto{margin-left:0}.pg .d-b .d-foto{margin-right:0}
+.pg .cartao.pres{padding:10px 14px 8px}
+.pg .cartao.pres h3{margin-bottom:6px}
+.pg .pres-lados{display:flex;align-items:center;gap:10px}
+.pg .pp{display:flex;align-items:center;gap:10px;flex:1;min-width:0}
+.pg .pp.pb{flex-direction:row-reverse;text-align:right}
+.pg .pp-t{display:flex;flex-direction:column;min-width:0}
+.pg .pp-n{font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pg .pp-n small{font-weight:400;color:var(--mute)}
+.pg .pp-p{font-size:clamp(26px,4vw,36px);font-weight:800;font-stretch:85%;line-height:1;letter-spacing:-.02em}
+.pg .pres-x{color:var(--mute);font-size:15px}
+.pg .cartao.pres .rod{display:flex;flex-wrap:wrap;justify-content:space-between;gap:2px 12px;margin:6px 0 0}
+.pg .cartao.pres .rod .ver{color:var(--ink)}
+@media (max-width:560px){
+  .pg .cab{margin-bottom:8px}
+  .pg .cab h1{font-size:24px}
+  .pg .cab h1 small{font-size:13px;margin-top:4px}
+  .pg .contagem{font-size:13px;padding:7px 11px;margin-bottom:8px;line-height:1.35}
+  .pg .ctl{gap:6px;margin-bottom:8px}
+  .pg .b-comp,.pg .b-story{font-size:13px;padding:6px 11px}
+  .pg .foto{width:38px;height:38px}
+  .pg .pp{gap:8px}
+  .pg .pp-n{font-size:13px}
+  .pg .pp-n small{display:none}
+  .pg .pp-p{font-size:28px}
+  .pg .pres-x{display:none}
+  .pg .cartao.pres .rod .ver{font-size:12px}
+  .pg #painel-mapa{padding-top:10px}
+  .pg .contagem .cg-l{display:none}
+  .pg:has(#cartao-pres) .cab h1 small{display:none}
+  .pg .btn{padding:4px 9px}
+  .pg #painel-mapa h2{row-gap:2px}
+  .pg #painel-mapa h2 small{order:3;flex-basis:100%;font-size:11.5px}
+  .pg .mapa-trilha.so-br{display:none}
+}
