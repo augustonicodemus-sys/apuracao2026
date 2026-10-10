@@ -183,6 +183,7 @@
       }).join("") +
       `</tbody><tfoot><tr><td class="l">Total</td><td>${tAt}</td><td>${R.distribuidas}</td><td>${R.garantidas}</td><td></td><td></td><td></td></tr></tfoot></table><p class="nota">Cláusula de barreira 2026: ✓ com 2,5% dos votos válidos no Brasil e 1,5% em pelo menos 9 estados — ou com 13 deputados eleitos em pelo menos 9 estados. Federações contam como um partido só. Passe o mouse sobre ✓/✗ para ver o critério. <b>Clique num partido</b> para ver a votação dele estado por estado.</p>`;
     detalhe(R);
+    mapaUF(R);
 
     // top 20
     $("#top").innerHTML = R.top.length ? `<table><thead><tr><th>#</th><th class="l">Candidato</th><th class="l">Partido</th><th>Votos</th></tr></thead><tbody>` +
@@ -190,6 +191,32 @@
       `</tbody></table><p class="nota"><span class="ok">✓</span> eleito se a apuração terminasse agora</p>` : '<p class="vazio">Sem votos apurados ainda. O ranking aparece quando a totalização começar.</p>';
   }
 
+
+  // ------------------------------------------------------------ mapa por estado: legenda com mais cadeiras
+  const UF_COD = { RO: 11, AC: 12, AM: 13, RR: 14, PA: 15, AP: 16, TO: 17, MA: 21, PI: 22, CE: 23, RN: 24, PB: 25, PE: 26, AL: 27, SE: 28, BA: 29, MG: 31, ES: 32, RJ: 33, SP: 35, PR: 41, SC: 42, RS: 43, MS: 50, MT: 51, GO: 52, DF: 53 };
+  const ufDeCod = (c) => Object.keys(UF_COD).find((u) => String(UF_COD[u]) === String(c));
+  let geoBR = null;
+  function ordemUF(i) { // legendas do estado, da que tem mais cadeiras (empate: mais votos)
+    return Object.keys(Object.assign({}, i.cad, i.votos)).map((id) => ({ id, c: i.cad[id] || 0, v: i.votos[id] || 0 })).sort((a, b) => b.c - a.c || b.v - a.v);
+  }
+  async function mapaUF(R) {
+    const el = $("#mapa-uf"); if (!el || !window.Mapa) return;
+    const porCod = {};
+    for (const i of R.porUf) porCod[UF_COD[i.u]] = i;
+    const cnt = {};
+    const lista = R.porUf.map((i) => ({ i, o: ordemUF(i), vagas: Object.values(i.cad).reduce((s, n) => s + n, 0) || T.VAGAS[i.u] })).sort((a, b) => b.vagas - a.vagas);
+    for (const { o } of lista) if (o[0] && o[0].c) cnt[o[0].id] = (cnt[o[0].id] || 0) + 1;
+    try { geoBR = geoBR || await Mapa.carregar("", "br"); } catch (e) { el.innerHTML = '<p class="vazio">Mapa indisponível agora.</p>'; return; }
+    Mapa.desenhar(el, geoBR, {
+      rotulo: "Mapa do Brasil: legenda com mais deputados federais em cada estado",
+      cor: (cod) => { const i = porCod[cod]; if (!i) return "#E3E7ED"; const o = ordemUF(i), vg = Object.values(i.cad).reduce((s, n) => s + n, 0); if (!o[0] || !o[0].c || !vg) return "#E3E7ED"; return Mapa.tom(cor(o[0].id), (o[0].c - (o[1] ? o[1].c : 0)) / vg); },
+      dica: (cod) => { const u = ufDeCod(cod), i = porCod[cod]; if (!i) return `<b>${esc(T.NOMES[u] || "")}</b>`; const o = ordemUF(i).filter((x) => x.c); return `<b>${esc(T.NOMES[u])}</b> <small>${T.VAGAS[u]} cadeiras</small>` + o.slice(0, 4).map((x) => `<div><i class="dot" style="background:${cor(x.id)}"></i>${esc(nomeLeg(x.id))} <b>${x.c}</b></div>`).join("") + "<small>clique para ver o quociente e as sobras</small>"; },
+      clique: (cod) => { const u = ufDeCod(cod); if (u) location.href = "federal.html?uf=" + u; },
+    });
+    $("#leg-uf").innerHTML = Object.entries(cnt).sort((a, b) => b[1] - a[1]).map(([id, n]) => `<span><i class="dot" style="background:${cor(id)}"></i>${esc(nomeLeg(id))} <b>${n}</b></span>`).join("") + (R.comVotos ? "" : "");
+    $("#lista-uf").innerHTML = `<table><thead><tr><th class="l">Estado</th><th>Vagas</th><th class="l">Legendas com mais cadeiras</th></tr></thead><tbody>${lista.map(({ i, o, vagas }) => `<tr data-uf="${i.u}"><td class="l"><b>${i.u}</b> <span style="color:var(--mute)">${esc(T.NOMES[i.u])}</span></td><td>${T.VAGAS[i.u] || vagas}</td><td class="l">${o.filter((x) => x.c).slice(0, 3).map((x) => `<i class="dot" style="background:${cor(x.id)}"></i>${esc(nomeLeg(x.id))} ${x.c}`).join(" &nbsp;") || "–"}</td></tr>`).join("")}</tbody></table>`;
+    $("#lista-uf").onclick = (ev) => { const tr = ev.target.closest("tr[data-uf]"); if (tr) location.href = "federal.html?uf=" + tr.dataset.uf; };
+  }
 
   // ------------------------------------------------------------ detalhe de um partido por estado
   let detLeg = (new URLSearchParams(location.search).get("partido") || "").toUpperCase() || null;
