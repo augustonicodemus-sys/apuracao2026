@@ -194,6 +194,7 @@
     $("#titulo-jogo").textContent = a.iniciou ? "Como chegaram ao 2º turno" : "O que está em jogo";
     if (ufs) renderEstados(corrida, ufs, a.iniciou);
     if (window.MapaT2) MapaT2.atualizar({ corrida, uf: CFG.pagina === "presidente" ? "BR" : CFG.uf, ufs, aoVivo: !!a.iniciou, horaEstado: d2 && a.iniciou ? d2.hora.trim() : "", total: { d1, d2 } });
+    cartaoTopo({ corrida, d1, d2 });
   }
 
   function renderEstados(corrida, ufs, aoVivo) {
@@ -228,54 +229,66 @@
         Promise.all(Object.entries(CORRIDAS).map(async ([uf, c]) => ({ uf, c, d1: await seguro(turno1(c, uf)), d2: await seguro(turno2(c, uf)) }))),
         Promise.all(T.UFS.map(async (u) => ({ u, d1: await seguro(turno1(CORRIDAS.BR, u)), d2: await seguro(turno2(CORRIDAS.BR, u)) }))),
       ]);
-      renderPainel(res);
       const br = res.find((r) => r.uf === "BR"), a = br.d2 ? D.apuracao(br.d2) : { iniciou: false };
       if (window.MapaT2) MapaT2.atualizar({ corrida: CORRIDAS.BR, uf: "BR", ufs, aoVivo: !!a.iniciou, horaEstado: br.d2 && a.iniciou ? br.d2.hora.trim() : "", total: { d1: br.d1, d2: br.d2 } });
+      renderPainel(res);
       status(`atualizado ${new Date().toLocaleTimeString("pt-BR")}`, "");
     } catch (e) { status("falha ao buscar no TSE: " + e.message, "erro"); }
     agendar(carregarPainel);
   }
-  // cartão do Presidente: uma faixa só, foto + nome + % de cada lado e a barra embaixo
-  function cartaoPres(c, d1, d2) {
+  // turno mostrado no cartão de cima (o mesmo do mapa): ?turno=1 ou 2 (padrão)
+  const turnoAtual = () => (window.MapaT2 && MapaT2.turno ? MapaT2.turno() : (new URLSearchParams(location.search).get("turno") === "1" ? 1 : 2));
+  const qTurno = () => { const q = new URLSearchParams(simQ.slice(1)); if (turnoAtual() === 1) q.set("turno", "1"); const t = q.toString(); return t ? "?" + t : ""; };
+
+  // números de um cartão: [{q, p}] na ordem fixa dos finalistas + rodapé
+  function numeros(c, d1, d2, turno) {
     const a = d2 ? D.apuracao(d2) : { iniciou: false };
-    let cand, vv, rod;
-    if (a.iniciou) { cand = a.ordem; vv = a.vv; rod = `${d2.pst}% das seções · ${situacao(c, a, d2)}`; }
-    else if (d1) { // 2º turno ainda sem votos: mostra zerado e o 1º turno como referência
+    let cand = [], vv = 0, rod = "";
+    if (turno === 1 && d1) {
+      const p = D.preTurno(d1, c.nums); cand = d1.cands; vv = p.vv;
+      rod = `resultado final do 1º turno · outros candidatos: ${pct(p.outros / (vv || 1))}`;
+    } else if (a.iniciou) { cand = a.ordem; vv = a.vv; rod = `${d2.pst}% das seções · ${situacao(c, a, d2)}`; }
+    else if (d1) {
       const p = D.preTurno(d1, c.nums), v1 = p.vv || 1;
-      const ref = c.nums.map((n) => { const k = d1.cands.find((x) => String(x.numero) === n); return `${esc(curtoNome(quem(c, { numero: n }).nome))} ${pct(k ? k.votos / v1 : 0)}`; }).join(" × ");
-      cand = []; vv = 0; rod = `apuração do 2º turno a partir das 17h de 25/10 · no 1º turno: ${ref}`;
-    }
-    else return `<a class="cartao grande pres" href="${c.url}${simQ}"><h3>Presidente da República</h3><p class="vazio">Sem dados do TSE agora.</p></a>`;
+      rod = `apuração do 2º turno a partir das 17h de 25/10 · no 1º turno: ${[p.A, p.B].map((k) => `${esc(curtoNome(quem(c, k).nome))} ${pct(k.votos / v1)}`).join(" × ")}`;
+    } else return null;
     const v = vv || 1;
     const lado = c.nums.map((n) => { const k = cand.find((x) => String(x.numero) === n) || { numero: n, votos: 0 }; return { q: quem(c, k), p: k.votos / v }; });
-    const [A, B] = lado;
-    const pessoa = (L, cls) => `<div class="pp ${cls}">${foto(L.q)}<div class="pp-t"><span class="pp-n">${esc(L.q.nome)} <small>${esc(L.q.partido)}</small></span><b class="pp-p" style="color:${L.q.cor}">${pct(L.p)}</b></div></div>`;
-    return `<a class="cartao grande pres" href="${c.url}${simQ}"><h3>Presidente da República</h3>
-      <div class="pres-lados">${pessoa(A, "pa")}<span class="pres-x" aria-hidden="true">×</span>${pessoa(B, "pb")}</div>
-      <div class="d-barra mini" role="img" aria-label="${esc(A.q.nome)} ${pct(A.p)}, ${esc(B.q.nome)} ${pct(B.p)}"><div style="width:${(A.p * 100).toFixed(2)}%;background:${A.q.cor}"></div><div style="width:${(B.p * 100).toFixed(2)}%;background:${B.q.cor}"></div><i class="d-meio"></i></div>
-      <p class="rod">${rod}<span class="ver">ver a disputa completa →</span></p></a>`;
+    return { lado, rod };
   }
+  const barra = ([A, B]) => `<div class="d-barra mini" role="img" aria-label="${esc(A.q.nome)} ${pct(A.p)}, ${esc(B.q.nome)} ${pct(B.p)}"><div style="width:${(A.p * 100).toFixed(2)}%;background:${A.q.cor}"></div><div style="width:${(B.p * 100).toFixed(2)}%;background:${B.q.cor}"></div><i class="d-meio"></i></div>`;
+
+  // cartão grande: foto + nome + % de cada lado e a barra embaixo (Presidente no painel; topo das páginas de cada disputa)
+  function cartaoDuelo(c, d1, d2, titulo, link) {
+    const turno = turnoAtual(), n = numeros(c, d1, d2, turno);
+    const tag = link ? "a" : "div", href = link ? ` href="${c.url}${qTurno()}"` : "";
+    const cab = `<h3>${esc(titulo)} <span class="tag-t">${turno}º turno</span></h3>`;
+    if (!n) return `<${tag} class="cartao grande pres"${href}>${cab}<p class="vazio">Sem dados do TSE agora.</p></${tag}>`;
+    const pessoa = (L, cls) => `<div class="pp ${cls}">${foto(L.q)}<div class="pp-t"><span class="pp-n">${esc(L.q.nome)} <small>${esc(L.q.partido)}</small></span><b class="pp-p" style="color:${L.q.cor}">${pct(L.p)}</b></div></div>`;
+    return `<${tag} class="cartao grande pres"${href}>${cab}
+      <div class="pres-lados">${pessoa(n.lado[0], "pa")}<span class="pres-x" aria-hidden="true">×</span>${pessoa(n.lado[1], "pb")}</div>${barra(n.lado)}
+      <p class="rod">${n.rod}${link ? '<span class="ver">ver a disputa completa →</span>' : ""}</p></${tag}>`;
+  }
+  let ultimoPainel = null;
   function renderPainel(res) {
+    ultimoPainel = res;
+    const turno = turnoAtual();
     const html = res.map(({ uf, c, d1, d2 }) => {
-      if (uf === "BR") return cartaoPres(c, d1, d2);
-      const a = d2 ? D.apuracao(d2) : { iniciou: false };
-      let corpo, rodape;
-      if (a.iniciou) {
-        const v = a.vv || 1;
-        corpo = [a.A, a.B].map((k) => { const q = quem(c, k); return `<div class="lin">${nomeHtml(q)}<b class="pc">${pct(k.votos / v)}</b></div>`; }).join("") +
-          `<div class="d-barra mini"><div style="width:${(a.A.votos / v * 100).toFixed(2)}%;background:${quem(c, a.A).cor}"></div><div style="width:${(a.B.votos / v * 100).toFixed(2)}%;background:${quem(c, a.B).cor}"></div><i class="d-meio"></i></div>`;
-        rodape = `${d2.pst}% das seções · ${situacao(c, a, d2)}`;
-      } else if (d1) { // 2º turno ainda sem votos: zerado, com o 1º turno como referência
-        const p = D.preTurno(d1, c.nums), v = p.vv || 1;
-        corpo = [p.A, p.B].map((k) => { const q = quem(c, k); return `<div class="lin">${nomeHtml(q)}<b class="pc">0,0%</b></div>`; }).join("") +
-          `<div class="d-barra mini"><i class="d-meio"></i></div>`;
-        rodape = `apuração a partir das 17h de 25/10 · no 1º turno: ${[p.A, p.B].map((k) => `${esc(curtoNome(quem(c, k).nome))} ${pct(k.votos / v)}`).join(" × ")}`;
-      } else { corpo = '<p class="vazio">Sem dados do TSE agora.</p>'; rodape = ""; }
-      return `<a class="cartao${uf === "BR" ? " grande" : ""}" href="${c.url}${simQ}"><h3>${uf === "BR" ? "Presidente da República" : "Governador · " + esc(c.nome)}</h3>${corpo}<p class="rod">${rodape}</p><span class="ver">${uf === "BR" ? "ver a disputa completa →" : "ver o mapa e a disputa →"}</span></a>`;
+      if (uf === "BR") return cartaoDuelo(c, d1, d2, "Presidente da República", true);
+      const n = numeros(c, d1, d2, turno);
+      const corpo = n ? n.lado.map((L) => `<div class="lin">${nomeHtml(L.q)}<b class="pc">${pct(L.p)}</b></div>`).join("") + barra(n.lado) : '<p class="vazio">Sem dados do TSE agora.</p>';
+      return `<a class="cartao" href="${c.url}${qTurno()}"><h3>Governador · ${esc(c.nome)}</h3>${corpo}<p class="rod">${n ? n.rod : ""}</p><span class="ver">ver o mapa e a disputa →</span></a>`;
     });
     $("#cartao-pres").innerHTML = html[0];
     $("#cartoes").innerHTML = html.slice(1).join("");
   }
+  // página de uma disputa: cartão no topo, logo abaixo dos botões
+  function cartaoTopo({ corrida, d1, d2 }) {
+    let el = $("#cartao-topo");
+    if (!el) { const ctl = $(".pg .ctl"); if (!ctl) return; ctl.insertAdjacentHTML("afterend", '<div class="cartoes" id="cartao-topo"></div>'); el = $("#cartao-topo"); }
+    el.innerHTML = cartaoDuelo(corrida, d1, d2, CFG.pagina === "presidente" ? "Presidente da República" : "Governador · " + corrida.nome, false);
+  }
+  window.addEventListener("t2-turno", () => { if (ultimoPainel) renderPainel(ultimoPainel); if (ultimo && CFG.pagina !== "painel") cartaoTopo(ultimo); });
 
   // ------------------------------------------------------------ comum
   function status(t, cls) { const st = $("#status"); if (st) { st.textContent = t; st.className = "st" + (cls ? " " + cls : ""); } }

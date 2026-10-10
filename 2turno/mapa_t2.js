@@ -121,7 +121,7 @@
   // ------------------------------------------------------------ desenho
   function atualizarSub() {
     const sub = $("#mapa-sub"); if (!sub) return;
-    const t = E.turno === 1 ? "1º turno · resultado final" : "2º turno";
+    const t = E.turno === 1 ? "1º turno · resultado final" : E.aoVivo ? "2º turno" : "2º turno · apuração a partir das 17h de 25/10";
     if (E.nivel === "BR") { sub.textContent = `${t} · por estado · clique num estado para ver os municípios`; return; }
     let s = `${t} · por município`;
     if (E.turno === 2) {
@@ -140,6 +140,7 @@
     try {
       if (br) vals = valoresEstados();
       else if (E.turno === 1) vals = await muniT1(nivel);
+      else if (!E.aoVivo) vals = {}; // 2º turno ainda sem votos: mapa cinza
       else { const c = cacheT2[nivel] || await muniT2(nivel); vals = c.m; if (!c.quando && !c.carregando) muniT2(nivel); }
     } catch (e) { $("#mapa").innerHTML = `<p class="aviso">Sem dados para o mapa agora (${esc(e.message)}).</p>`; return; }
     let geo;
@@ -206,7 +207,7 @@
       if (a.vv) { const q = quem(a.lider, (x.nomes[a.lider] || [])[1], (x.nomes[a.lider] || [])[0]); lid = `<span title="${esc(q.nome)} +${fmt(a.dif)} votos"><i class="dot" style="background:${q.cor}"></i>+${fmtK(a.dif)}</span>`; }
       return `<tr data-cod="${cod}" class="clic${cod === E.sel ? " sel" : ""}"><td class="l">${esc(x.nome || cod)}</td><td>${vez(x, na)}</td><td>${vez(x, nb)}</td><td class="l">${lid}</td>${t2 ? `<td>${x.pst ? x.pst + "%" : "–"}</td><td>${x.hora ? esc(x.hora.split(" ").pop().slice(0, 5)) : "–"}</td>` : ""}</tr>`;
     }).join("");
-    el.innerHTML = `<table><thead><tr><th class="l">${br ? "Estado" : "Município"}</th><th>${esc(curto(qa.nome))}</th><th>${esc(curto(qb.nome))}</th><th class="l" title="Diferença de votos para o 2º colocado; K = mil votos">Vantagem</th>${t2 ? "<th>Seções</th><th>TSE</th>" : ""}</tr></thead><tbody>${corpo || `<tr><td colspan="6" class="l">${filtro ? "nenhum município com esse nome" : "carregando…"}</td></tr>`}</tbody></table>`;
+    el.innerHTML = `<table><thead><tr><th class="l">${br ? "Estado" : "Município"}</th><th>${esc(curto(qa.nome))}</th><th>${esc(curto(qb.nome))}</th><th class="l" title="Diferença de votos para o 2º colocado; K = mil votos">Vantagem</th>${t2 ? "<th>Seções</th><th>TSE</th>" : ""}</tr></thead><tbody>${corpo || `<tr><td colspan="6" class="l">${filtro ? "nenhum município com esse nome" : E.turno === 2 && !E.aoVivo ? "a apuração do 2º turno começa às 17h de 25/10" : "carregando…"}</td></tr>`}</tbody></table>`;
     const f = $("#mapa-filtro"); if (f) f.hidden = br;
   }
 
@@ -236,13 +237,14 @@
     E.nivel = nivel; E.sel = null; M.esconderDica();
     const f = $("#mapa-filtro"); if (f) f.value = "";
     $("#mapa-det").innerHTML = "";
-    if (nivel !== "BR" && E.turno === 2) muniT2(nivel, true).then(() => { if (E.nivel === nivel) desenharNivel(); });
+    if (nivel !== "BR" && E.turno === 2 && E.aoVivo) muniT2(nivel, true).then(() => { if (E.nivel === nivel) desenharNivel(); });
     desenharNivel(); urlEstado();
   }
   function urlEstado() {
     const q = new URLSearchParams(location.search);
     if (E.nivel !== "BR" && E.podeBrasil) q.set("mapa", E.nivel.toLowerCase()); else q.delete("mapa");
     q.delete("mun");
+    if (E.turno === 1) q.set("turno", "1"); else q.delete("turno");
     const xs = E.sel && valoresAtuais[E.sel];
     if (xs && E.nivel !== "BR") q.set("cidade", slug(xs.nome)); else q.delete("cidade");
     history.replaceState(null, "", location.pathname + (q.toString() ? "?" + q : "") + location.hash);
@@ -251,9 +253,17 @@
     document.querySelectorAll("#mapa-turnos button").forEach((b) => {
       const t = Number(b.dataset.t);
       b.setAttribute("aria-pressed", String(t === E.turno));
-      b.disabled = t === 2 && !E.aoVivo;
-      b.title = b.disabled ? "Disponível quando a apuração do 2º turno começar (25/10)" : "";
+      b.disabled = false;
+      b.title = t === 2 && !E.aoVivo ? "A apuração do 2º turno começa às 17h de 25/10: até lá o mapa fica cinza" : "";
     });
+  }
+
+  // ------------------------------------------------------------ turno (o mesmo para o cartão de cima e o mapa)
+  function turnoInicial() { const t = new URLSearchParams(location.search).get("turno"); return t === "1" ? 1 : 2; }
+  function mudarTurno(t) {
+    if (!E || t === E.turno) return;
+    E.turno = t; botoesTurno(); abrir(E.nivel);
+    window.dispatchEvent(new CustomEvent("t2-turno", { detail: t }));
   }
 
   // ------------------------------------------------------------ entrada
@@ -265,17 +275,15 @@
       let nivel = podeBrasil ? "BR" : uf;
       const pedido = (q.get("mapa") || "").toUpperCase();
       if (podeBrasil && T.NOMES[pedido]) nivel = pedido;
-      E = { corrida, podeBrasil, nivel, sel: q.get("mun") || null, selSlug: q.get("cidade") || null, total, turno: aoVivo ? 2 : 1, aoVivo, ufs, arquivoT1: corrida.cargo === 1 ? "presidente_t1" : "governador_t1" };
-      document.querySelectorAll("#mapa-turnos button").forEach((b) => b.addEventListener("click", () => { E.turno = Number(b.dataset.t); botoesTurno(); abrir(E.nivel); }));
+      E = { corrida, podeBrasil, nivel, sel: q.get("mun") || null, selSlug: q.get("cidade") || null, total, turno: turnoInicial(), aoVivo, ufs, arquivoT1: corrida.cargo === 1 ? "presidente_t1" : "governador_t1" };
+      document.querySelectorAll("#mapa-turnos button").forEach((b) => b.addEventListener("click", () => mudarTurno(Number(b.dataset.t))));
       $("#mapa-filtro").addEventListener("input", () => lista(valoresAtuais));
       $("#mapa-lista").addEventListener("click", (ev) => {
         const tr = ev.target.closest("tr[data-cod]"); if (!tr) return;
         if (E.nivel === "BR") abrir(ufDeCod(tr.dataset.cod)); else selecionar(tr.dataset.cod, false);
       });
     }
-    const virouAoVivo = !E.aoVivo && aoVivo;
     Object.assign(E, { ufs, aoVivo, horaEstado, total });
-    if (virouAoVivo) E.turno = 2;
     botoesTurno();
     if (E.turno === 2 && E.nivel !== "BR") muniT2(E.nivel).then(() => desenharNivel());
     desenharNivel();
@@ -301,5 +309,5 @@
     };
   };
 
-  window.MapaT2 = { atualizar };
+  window.MapaT2 = { atualizar, turno: () => (E ? E.turno : turnoInicial()) };
 })();
