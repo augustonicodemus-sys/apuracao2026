@@ -32,6 +32,7 @@
   const fmtK = (n) => { n = Math.round(Math.abs(n)) || 0; return n < 1000 ? n.toLocaleString("pt-BR") : Math.round(n / 1000).toLocaleString("pt-BR") + "K"; }; // vantagem compacta ("+1.100K")
   const pct = (x, d = 1) => { if (Math.abs(x - 0.5) < 0.0005) d = 2; return (x * 100).toLocaleString("pt-BR", { minimumFractionDigits: d, maximumFractionDigits: d }) + "%"; }; // perto de 50%: duas casas
   const num = (x) => T.num(x);
+  const curtoNome = (n) => { const w = String(n).split(" "); return /^Profess/.test(w[0]) && w[1] ? w[1] : w[0]; };
   const simAtivo = !!(S && S.ativo);
   const simQ = simAtivo ? "?sim=" + S.pct : "";
 
@@ -239,7 +240,11 @@
     const a = d2 ? D.apuracao(d2) : { iniciou: false };
     let cand, vv, rod;
     if (a.iniciou) { cand = a.ordem; vv = a.vv; rod = `${d2.pst}% das seções · ${situacao(c, a, d2)}`; }
-    else if (d1) { const p = D.preTurno(d1, c.nums); cand = d1.cands; vv = p.vv; rod = `resultado do 1º turno · outros candidatos: ${pct(p.outros / (vv || 1))}`; }
+    else if (d1) { // 2º turno ainda sem votos: mostra zerado e o 1º turno como referência
+      const p = D.preTurno(d1, c.nums), v1 = p.vv || 1;
+      const ref = c.nums.map((n) => { const k = d1.cands.find((x) => String(x.numero) === n); return `${esc(curtoNome(quem(c, { numero: n }).nome))} ${pct(k ? k.votos / v1 : 0)}`; }).join(" × ");
+      cand = []; vv = 0; rod = `apuração do 2º turno a partir das 17h de 25/10 · no 1º turno: ${ref}`;
+    }
     else return `<a class="cartao grande pres" href="${c.url}${simQ}"><h3>Presidente da República</h3><p class="vazio">Sem dados do TSE agora.</p></a>`;
     const v = vv || 1;
     const lado = c.nums.map((n) => { const k = cand.find((x) => String(x.numero) === n) || { numero: n, votos: 0 }; return { q: quem(c, k), p: k.votos / v }; });
@@ -260,10 +265,11 @@
         corpo = [a.A, a.B].map((k) => { const q = quem(c, k); return `<div class="lin">${nomeHtml(q)}<b class="pc">${pct(k.votos / v)}</b></div>`; }).join("") +
           `<div class="d-barra mini"><div style="width:${(a.A.votos / v * 100).toFixed(2)}%;background:${quem(c, a.A).cor}"></div><div style="width:${(a.B.votos / v * 100).toFixed(2)}%;background:${quem(c, a.B).cor}"></div><i class="d-meio"></i></div>`;
         rodape = `${d2.pst}% das seções · ${situacao(c, a, d2)}`;
-      } else if (d1) {
+      } else if (d1) { // 2º turno ainda sem votos: zerado, com o 1º turno como referência
         const p = D.preTurno(d1, c.nums), v = p.vv || 1;
-        corpo = [p.A, p.B].map((k) => { const q = quem(c, k); return `<div class="lin">${nomeHtml(q)}<b class="pc">${pct(k.votos / v)}</b></div>`; }).join("");
-        rodape = `resultado do 1º turno · outros candidatos: ${pct(p.outros / v)}` + (d1.vansj > p.vv * 0.01 ? ` · ${fmt(d1.vansj)} votos sub judice fora dos válidos` : "");
+        corpo = [p.A, p.B].map((k) => { const q = quem(c, k); return `<div class="lin">${nomeHtml(q)}<b class="pc">0,0%</b></div>`; }).join("") +
+          `<div class="d-barra mini"><i class="d-meio"></i></div>`;
+        rodape = `apuração a partir das 17h de 25/10 · no 1º turno: ${[p.A, p.B].map((k) => `${esc(curtoNome(quem(c, k).nome))} ${pct(k.votos / v)}`).join(" × ")}`;
       } else { corpo = '<p class="vazio">Sem dados do TSE agora.</p>'; rodape = ""; }
       return `<a class="cartao${uf === "BR" ? " grande" : ""}" href="${c.url}${simQ}"><h3>${uf === "BR" ? "Presidente da República" : "Governador · " + esc(c.nome)}</h3>${corpo}<p class="rod">${rodape}</p><span class="ver">${uf === "BR" ? "ver a disputa completa →" : "ver o mapa e a disputa →"}</span></a>`;
     });
