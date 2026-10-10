@@ -170,8 +170,8 @@
     const el = $("#mapa-trilha"); if (!el) return;
     if (E.nivel === "BR") { el.innerHTML = "<b>Brasil</b>"; return; }
     const gov = E.podeBrasil && window.T2 && T2.GOV.includes(E.nivel) ? ` <a class="mapa-gov" href="governador-${E.nivel.toLowerCase()}.html${simAtivo ? "?sim=" + S.pct : ""}">Governador de ${E.nivel} no 2º turno →</a>` : "";
-    el.innerHTML = (E.podeBrasil ? `<a href="#" data-ir="BR">Brasil</a> › ` : "") + `<b>${esc(T.NOMES[E.nivel])}</b>` + gov;
-    const a = el.querySelector("a[data-ir]"); if (a) a.addEventListener("click", (ev) => { ev.preventDefault(); abrir("BR"); });
+    el.innerHTML = (E.podeBrasil ? `<button type="button" class="volta-br" data-ir="BR" title="Voltar ao mapa do Brasil"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M7 3l6 1 4 3 4 2-1 4-4 3-2 5-4 1-2-4-3-2 1-4-3-3 2-4z" fill="currentColor"/></svg> Voltar ao Brasil</button> ` : "") + `<b>${esc(T.NOMES[E.nivel])}</b>` + gov;
+    const a = el.querySelector("[data-ir]"); if (a) a.addEventListener("click", (ev) => { ev.preventDefault(); abrir("BR"); });
   }
 
   function legenda(vals) {

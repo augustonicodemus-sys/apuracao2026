@@ -112,3 +112,7 @@
 .story-dica{font:13px/1.4 "Archivo",system-ui,sans-serif;color:#3A4A63;margin:10px 0 0}
 .pg h2.sec{font-size:17px;margin:6px 0 10px}
 .pg .mapa-gov{margin-left:12px;font-size:13px;font-weight:600;color:#1E8A5A}
+
+.pg .volta-br{font:inherit;font-size:14px;font-weight:700;display:inline-flex;align-items:center;gap:6px;background:#F2C230;color:#16243A;border:0;border-radius:18px;padding:6px 14px;margin-right:8px;cursor:pointer}
+.pg .volta-br:hover{background:#E5B41F}
+.pg .mapa-trilha{display:flex;align-items:center;flex-wrap:wrap;gap:6px}
