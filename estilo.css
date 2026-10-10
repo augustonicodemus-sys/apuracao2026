@@ -115,3 +115,24 @@ body{margin:0;line-height:1.4}
 .site-nav .turnos a[aria-current="page"]{background:#F2C230;color:#16243A}
 .site-nav .turnos a:hover:not([aria-current]){background:#22324B}
 @media (max-width:900px){.site-nav .turnos{margin:4px 0}}
+
+/* menu de cima igual em todo o site + segunda linha com as páginas de cada turno (09/10) */
+.site-nav a.item[aria-current="true"]{color:#fff;font-weight:600;border-bottom-color:#F2C230}
+.sub-nav{background:#22324B;border-top:1px solid #2C3C57}
+.sub-nav .sub-in{max-width:1400px;margin:0 auto;padding:0 20px}
+.sub-nav ul{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;align-items:center;gap:2px}
+.sub-nav a{display:block;color:#C9D3E0;text-decoration:none;font-size:13px;padding:8px 8px 6px;border-bottom:2px solid transparent;white-space:nowrap}
+.sub-nav a:hover{color:#fff;border-bottom-color:var(--nav-mute)}
+.sub-nav a[aria-current="page"]{color:#fff;font-weight:600;border-bottom-color:#F2C230}
+.sub-nav a.uf{padding-left:5px;padding-right:5px}
+.sub-nav .sep{color:var(--nav-mute);font-size:12px;padding:8px 0 6px 10px;white-space:nowrap}
+.sub-nav a:focus-visible{outline:2px solid #F2C230;outline-offset:-2px}
+@media (max-width:900px){
+  .sub-nav .sub-in{padding:0 12px}
+  /* no celular os itens quebram linha em vez de rolar para o lado (nada fica escondido) */
+  .site-nav ul{flex-wrap:wrap;overflow-x:visible;column-gap:4px}
+  .site-nav a.item{padding:7px 6px}
+  .sub-nav ul{flex-wrap:wrap;overflow-x:visible;column-gap:0}
+  .sub-nav a{padding:7px 5px 5px;font-size:12.5px}
+  .sub-nav .sep{padding:7px 0 5px 6px}
+}
