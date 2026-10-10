@@ -250,7 +250,7 @@
     history.replaceState(null, "", location.pathname + (q.toString() ? "?" + q : "") + location.hash);
   }
   function botoesTurno() {
-    document.querySelectorAll("#mapa-turnos button").forEach((b) => {
+    document.querySelectorAll("#mapa-turnos button, .turno-chave button").forEach((b) => {
       const t = Number(b.dataset.t);
       b.setAttribute("aria-pressed", String(t === E.turno));
       b.disabled = false;
@@ -276,7 +276,7 @@
       const pedido = (q.get("mapa") || "").toUpperCase();
       if (podeBrasil && T.NOMES[pedido]) nivel = pedido;
       E = { corrida, podeBrasil, nivel, sel: q.get("mun") || null, selSlug: q.get("cidade") || null, total, turno: turnoInicial(), aoVivo, ufs, arquivoT1: corrida.cargo === 1 ? "presidente_t1" : "governador_t1" };
-      document.querySelectorAll("#mapa-turnos button").forEach((b) => b.addEventListener("click", () => mudarTurno(Number(b.dataset.t))));
+      document.querySelectorAll("#mapa-turnos button, .turno-chave button").forEach((b) => b.addEventListener("click", () => mudarTurno(Number(b.dataset.t))));
       $("#mapa-filtro").addEventListener("input", () => lista(valoresAtuais));
       $("#mapa-lista").addEventListener("click", (ev) => {
         const tr = ev.target.closest("tr[data-cod]"); if (!tr) return;

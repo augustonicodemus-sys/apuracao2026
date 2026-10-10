@@ -157,3 +157,14 @@
 }
 .pg .cartao h3 .tag-t{display:inline-block;font-size:11px;font-weight:700;background:#F2C230;color:#16243A;border-radius:10px;padding:1px 8px;margin-left:6px;letter-spacing:0;text-transform:none;vertical-align:2px}
 #cartao-topo{margin-bottom:14px}
+/* chave de turno em destaque, abaixo do título (10/10) */
+.pg .turno-chave{display:flex;width:100%;max-width:520px;border:2px solid var(--ink);border-radius:12px;overflow:hidden;margin:2px 0 12px}
+.pg .turno-chave button{flex:1;font:inherit;font-size:17px;font-weight:800;font-stretch:90%;border:0;border-left:2px solid var(--ink);background:var(--paper);color:var(--ink);padding:9px 10px 8px;cursor:pointer;line-height:1.15}
+.pg .turno-chave button:first-child{border-left:0}
+.pg .turno-chave button small{display:block;font-size:12px;font-weight:500;font-stretch:100%;color:var(--mute);margin-top:2px}
+.pg .turno-chave button[aria-pressed="true"]{background:var(--ink);color:#fff}
+.pg .turno-chave button[aria-pressed="true"] small{color:#C9D3E0}
+.pg .turno-chave button:not([aria-pressed="true"]):hover{background:var(--panel)}
+@media (max-width:560px){.pg .turno-chave{max-width:none}.pg .turno-chave button{font-size:16px}}
+@media (max-width:560px){.pg #turno1 .cbs{--cl:112px;--cvw:120px}}
+.pg .kpis-t2{margin:0 0 10px}
