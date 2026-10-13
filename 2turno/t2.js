@@ -241,7 +241,7 @@
   const qTurno = () => { const q = new URLSearchParams(simQ.slice(1)); if (turnoAtual() === 1) q.set("turno", "1"); const t = q.toString(); return t ? "?" + t : ""; };
 
   // números de um cartão: [{q, p}] na ordem fixa dos finalistas + rodapé
-  function numeros(c, d1, d2, turno) {
+  function numeros(c, d1, d2, turno, semRef) {
     const a = d2 ? D.apuracao(d2) : { iniciou: false };
     let cand = [], vv = 0, rod = "";
     if (turno === 1 && d1) {
@@ -250,7 +250,7 @@
     } else if (a.iniciou) { cand = a.ordem; vv = a.vv; rod = `${d2.pst}% das seções · ${situacao(c, a, d2)}`; }
     else if (d1) {
       const p = D.preTurno(d1, c.nums), v1 = p.vv || 1;
-      rod = `apuração do 2º turno a partir das 17h de 25/10 · no 1º turno: ${[p.A, p.B].map((k) => `${esc(curtoNome(quem(c, k).nome))} ${pct(k.votos / v1)}`).join(" × ")}`;
+      rod = semRef ? "" : `apuração do 2º turno a partir das 17h de 25/10 · no 1º turno: ${[p.A, p.B].map((k) => `${esc(curtoNome(quem(c, k).nome))} ${pct(k.votos / v1)}`).join(" × ")}`;
     } else return null;
     const v = vv || 1;
     const lado = c.nums.map((n) => { const k = cand.find((x) => String(x.numero) === n) || { numero: n, votos: 0 }; return { q: quem(c, k), p: k.votos / v }; });
@@ -259,15 +259,48 @@
   const barra = ([A, B]) => `<div class="d-barra mini" role="img" aria-label="${esc(A.q.nome)} ${pct(A.p)}, ${esc(B.q.nome)} ${pct(B.p)}"><div style="width:${(A.p * 100).toFixed(2)}%;background:${A.q.cor}"></div><div style="width:${(B.p * 100).toFixed(2)}%;background:${B.q.cor}"></div><i class="d-meio"></i></div>`;
 
   // cartão grande: foto + nome + % de cada lado e a barra embaixo (Presidente no painel; topo das páginas de cada disputa)
+  // ícones de compartilhar (SVG próprios, sem biblioteca)
+  const ICO = {
+    instagram: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21.5 2.5 10.2 13.8M21.5 2.5l-7 19-4.3-7.7-7.7-4.3z" fill="none" stroke="#fff" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/></svg>',
+    whatsapp: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.2a8.8 8.8 0 0 0-7.6 13.2L3.2 20.8l4.5-1.2A8.8 8.8 0 1 0 12 3.2z" fill="none" stroke="#fff" stroke-width="1.8" stroke-linejoin="round"/><path d="M9.1 7.9c.3-.3.7-.3.9 0l.9 1.6c.1.3.1.6-.1.8l-.5.6c.6 1.2 1.6 2.2 2.8 2.8l.6-.5c.2-.2.5-.2.8-.1l1.6.9c.3.2.3.6 0 .9l-.6.7c-.5.5-1.3.6-2 .3a9.5 9.5 0 0 1-4.9-4.9c-.3-.7-.2-1.5.3-2z" fill="#fff"/></svg>',
+    x: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h4.2l10 16h-4.2z" fill="#fff"/><path d="M18.6 4 5.6 20" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg>',
+    facebook: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13.4 21v-7.6h2.6l.4-3h-3V8.5c0-.9.3-1.5 1.5-1.5h1.6V4.3c-.3 0-1.2-.1-2.3-.1-2.3 0-3.9 1.4-3.9 4v2.2H7.7v3h2.6V21z" fill="#fff"/></svg>',
+    mais: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="5.5" r="2.6" fill="#fff"/><circle cx="6" cy="12" r="2.6" fill="#fff"/><circle cx="18" cy="18.5" r="2.6" fill="#fff"/><path d="M8.3 10.8 15.7 6.7M8.3 13.2l7.4 4.1" stroke="#fff" stroke-width="1.8"/></svg>',
+  };
+  const REDES = [["instagram", "Instagram (Story)"], ["whatsapp", "WhatsApp"], ["x", "X"], ["facebook", "Facebook"], ["mais", "Mais opções"]];
+  const barraShare = () => `<div class="share" role="group" aria-label="Compartilhar">${REDES.map(([k, t]) => `<button type="button" class="sh sh-${k}" data-rede="${k}" title="${t}" aria-label="Compartilhar: ${t}">${ICO[k]}</button>`).join("")}<span class="sh-ok" hidden>link copiado ✓</span></div>`;
+  let textoShare = "";
+  function textoDoCartao(c, n, turno) {
+    const [A, B] = n.lado, cargo = c.cargo === 1 ? "Presidente" : "Governador " + String(c.titulo || "").split("· ").pop();
+    if (turno === 1) return `${cargo} 2026, 1º turno: ${A.q.nome} ${pct(A.p)} × ${B.q.nome} ${pct(B.p)}. Veja o mapa por cidade no Radar Numérico`;
+    if (A.p || B.p) return `Apuração ${cargo} 2026 ao vivo: ${A.q.nome} ${pct(A.p)} × ${B.q.nome} ${pct(B.p)}`;
+    return `${cargo} 2026: ${A.q.nome} × ${B.q.nome} no 2º turno, dia 25/10. Acompanhe a apuração ao vivo no Radar Numérico`;
+  }
+  document.addEventListener("click", async (ev) => {
+    const b = ev.target.closest(".share [data-rede]"); if (!b) return;
+    ev.preventDefault(); ev.stopPropagation();
+    const r = b.dataset.rede, url = location.href.split("#")[0], t = textoShare || document.title.replace(" · Radar Numérico", "");
+    try { window.gtag && gtag("event", "share", { method: r, content_type: "cartao", item_id: location.pathname }); } catch (e) {}
+    const abre = (u) => window.open(u, "_blank", "noopener");
+    if (r === "whatsapp") return abre("https://wa.me/?text=" + encodeURIComponent(t + " " + url));
+    if (r === "x") return abre("https://x.com/intent/post?text=" + encodeURIComponent(t) + "&url=" + encodeURIComponent(url));
+    if (r === "facebook") return abre("https://www.facebook.com/sharer/sharer.php?u=" + encodeURIComponent(url));
+    if (r === "instagram") { const st = document.getElementById("b-story"); if (st) return st.click(); }
+    if (navigator.share) { try { await navigator.share({ title: t, text: t, url }); return; } catch (e) { if (e.name === "AbortError") return; } }
+    try { await navigator.clipboard.writeText(url); const ok = b.parentNode.querySelector(".sh-ok"); if (ok) { ok.hidden = false; setTimeout(() => { ok.hidden = true; }, 1600); } } catch (e) {}
+  });
+
+  // cartão grande: foto + nome + % de cada lado, a barra e os botões de compartilhar
   function cartaoDuelo(c, d1, d2, titulo, link) {
-    const turno = turnoAtual(), n = numeros(c, d1, d2, turno);
-    const tag = link ? "a" : "div", href = link ? ` href="${c.url}${qTurno()}"` : "";
+    const turno = turnoAtual(), n = numeros(c, d1, d2, turno, true);
     const cab = `<h3>${esc(titulo)} <span class="tag-t">${turno}º turno</span></h3>`;
-    if (!n) return `<${tag} class="cartao grande pres"${href}>${cab}<p class="vazio">Sem dados do TSE agora.</p></${tag}>`;
+    const abre = link ? `<a class="cartao-a" href="${c.url}${qTurno()}">` : "<div>", fecha = link ? "</a>" : "</div>";
+    if (!n) return `<div class="cartao grande pres">${abre}${cab}<p class="vazio">Sem dados do TSE agora.</p>${fecha}</div>`;
+    textoShare = textoDoCartao(c, n, turno);
     const pessoa = (L, cls) => `<div class="pp ${cls}">${foto(L.q)}<div class="pp-t"><span class="pp-n">${esc(L.q.nome)} <small>${esc(L.q.partido)}</small></span><b class="pp-p" style="color:${L.q.cor}">${pct(L.p)}</b></div></div>`;
-    return `<${tag} class="cartao grande pres"${href}>${cab}
+    return `<div class="cartao grande pres">${abre}${cab}
       <div class="pres-lados">${pessoa(n.lado[0], "pa")}<span class="pres-x" aria-hidden="true">×</span>${pessoa(n.lado[1], "pb")}</div>${barra(n.lado)}
-      <p class="rod">${n.rod}</p></${tag}>`;
+      ${n.rod ? `<p class="rod">${n.rod}</p>` : ""}${fecha}${barraShare()}</div>`;
   }
   let ultimoPainel = null;
   function renderPainel(res) {
