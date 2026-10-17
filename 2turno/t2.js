@@ -267,8 +267,9 @@
     facebook: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13.4 21v-7.6h2.6l.4-3h-3V8.5c0-.9.3-1.5 1.5-1.5h1.6V4.3c-.3 0-1.2-.1-2.3-.1-2.3 0-3.9 1.4-3.9 4v2.2H7.7v3h2.6V21z" fill="#fff"/></svg>',
     mais: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="5.5" r="2.6" fill="#fff"/><circle cx="6" cy="12" r="2.6" fill="#fff"/><circle cx="18" cy="18.5" r="2.6" fill="#fff"/><path d="M8.3 10.8 15.7 6.7M8.3 13.2l7.4 4.1" stroke="#fff" stroke-width="1.8"/></svg>',
   };
-  const REDES = [["instagram", "Instagram (Story)"], ["whatsapp", "WhatsApp"], ["x", "X"], ["facebook", "Facebook"], ["mais", "Mais opções"]];
-  const barraShare = () => `<div class="share" role="group" aria-label="Compartilhar">${REDES.map(([k, t]) => `<button type="button" class="sh sh-${k}" data-rede="${k}" title="${t}" aria-label="Compartilhar: ${t}">${ICO[k]}</button>`).join("")}<span class="sh-ok" hidden>link copiado ✓</span></div>`;
+  // linha de baixo do cartão: Story do Instagram + WhatsApp à esquerda, Atualizar à direita (16/10)
+  const igIco = () => (window.Compartilhar && Compartilhar.ICO_IG) || "";
+  const barraShare = () => `<div class="share" role="group" aria-label="Compartilhar e atualizar"><button type="button" class="b-story sh-story" data-rede="instagram">${igIco()} Story do Instagram</button><button type="button" class="sh sh-whatsapp" data-rede="whatsapp" title="WhatsApp" aria-label="Compartilhar no WhatsApp">${ICO.whatsapp}</button><button class="btn" id="atualizar" type="button">Atualizar</button></div>`;
   let textoShare = "";
   function textoDoCartao(c, n, turno) {
     const [A, B] = n.lado, cargo = c.cargo === 1 ? "Presidente" : "Governador " + String(c.titulo || "").split("· ").pop();
@@ -285,7 +286,7 @@
     if (r === "whatsapp") return abre("https://wa.me/?text=" + encodeURIComponent(t + " " + url));
     if (r === "x") return abre("https://x.com/intent/post?text=" + encodeURIComponent(t) + "&url=" + encodeURIComponent(url));
     if (r === "facebook") return abre("https://www.facebook.com/sharer/sharer.php?u=" + encodeURIComponent(url));
-    if (r === "instagram") { const st = document.getElementById("b-story"); if (st) return st.click(); }
+    if (r === "instagram") { if (window.Compartilhar && Compartilhar.story) return Compartilhar.story(b); }
     if (navigator.share) { try { await navigator.share({ title: t, text: t, url }); return; } catch (e) { if (e.name === "AbortError") return; } }
     try { await navigator.clipboard.writeText(url); const ok = b.parentNode.querySelector(".sh-ok"); if (ok) { ok.hidden = false; setTimeout(() => { ok.hidden = true; }, 1600); } } catch (e) {}
   });
@@ -318,7 +319,7 @@
   // página de uma disputa: cartão no topo, logo abaixo dos botões
   function cartaoTopo({ corrida, d1, d2 }) {
     let el = $("#cartao-topo");
-    if (!el) { const ctl = $(".pg .ctl"); if (!ctl) return; ctl.insertAdjacentHTML("afterend", '<div class="cartoes" id="cartao-topo"></div>'); el = $("#cartao-topo"); }
+    if (!el) { const ctl = $(".pg .sec-barra") || $(".pg .ctl"); if (!ctl) return; ctl.insertAdjacentHTML("afterend", '<div class="cartoes" id="cartao-topo"></div>'); el = $("#cartao-topo"); }
     el.innerHTML = cartaoDuelo(corrida, d1, d2, CFG.pagina === "presidente" ? "Presidente da República" : "Governador · " + corrida.nome, false);
   }
   // barra de seções apuradas (segue a chave: 1º turno = 100%; 2º turno = o que o TSE já totalizou)
@@ -341,7 +342,7 @@
   function init() {
     contagem(); setInterval(contagem, 30000);
     const fn = CFG.pagina === "painel" ? carregarPainel : carregarDisputa;
-    const at = $("#atualizar"); if (at) at.addEventListener("click", fn);
+    document.addEventListener("click", (ev) => { if (ev.target.closest("#atualizar")) { ev.preventDefault(); fn(); } });
     fn();
   }
   window.T2 = { CORRIDAS, GOV };
