@@ -8,15 +8,20 @@
   const evento = (acao, metodo) => { try { window.gtag && gtag("event", acao, { method: metodo, content_type: "pagina", item_id: location.pathname }); } catch (e) {} };
   const texto = () => (window.StoryDados && StoryDados().textoCompartilhar) || document.title.replace(" · Radar Numérico", "");
 
+  // ícone do Instagram (contorno) usado nos botões de Story
+  const ICO_IG = '<svg viewBox="0 0 24 24" aria-hidden="true" width="16" height="16"><rect x="3" y="3" width="18" height="18" rx="5" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="4.2" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="17.4" cy="6.6" r="1.3" fill="currentColor"/></svg>';
+  const ICO_WA = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.2a8.8 8.8 0 0 0-7.6 13.2L3.2 20.8l4.5-1.2A8.8 8.8 0 1 0 12 3.2z" fill="none" stroke="#fff" stroke-width="1.8" stroke-linejoin="round"/><path d="M9.1 7.9c.3-.3.7-.3.9 0l.9 1.6c.1.3.1.6-.1.8l-.5.6c.6 1.2 1.6 2.2 2.8 2.8l.6-.5c.2-.2.5-.2.8-.1l1.6.9c.3.2.3.6 0 .9l-.6.7c-.5.5-1.3.6-2 .3a9.5 9.5 0 0 1-4.9-4.9c-.3-.7-.2-1.5.3-2z" fill="#fff"/></svg>';
+  // O "Compartilhar" (link / WhatsApp) agora fica no topo do site (menu.js); aqui o Story e o WhatsApp, onde houver <div id="compartilhar">.
+  const botoes = () => window.StoryDados ? `<button type="button" class="b-story sh-story" id="b-story">${ICO_IG} Story do Instagram</button><button type="button" class="sh sh-whatsapp" id="b-wa" title="WhatsApp" aria-label="Compartilhar no WhatsApp">${ICO_WA}</button>` : "";
   function montar() {
-    const el = $("#compartilhar"); if (!el) return;
-    el.innerHTML = `<button type="button" class="b-comp" id="b-comp"><span aria-hidden="true">↗</span> Compartilhar</button>` +
-      (window.StoryDados ? `<button type="button" class="b-story" id="b-story"><span aria-hidden="true">◎</span> Story do Instagram</button>` : "") +
-      `<div class="comp-menu" id="comp-menu" hidden></div>`;
-    $("#b-comp").addEventListener("click", compartilhar);
-    const bs = $("#b-story"); if (bs) bs.addEventListener("click", story);
-    document.addEventListener("click", (ev) => { const m = $("#comp-menu"); if (m && !m.hidden && !ev.target.closest("#compartilhar")) m.hidden = true; });
+    const el = $("#compartilhar"); if (el) el.innerHTML = botoes();
   }
+  // cliques por delegação: os botões podem ser redesenhados (cartão do explorador)
+  document.addEventListener("click", (ev) => {
+    const bs = ev.target.closest("#b-story"); if (bs) { story(bs); return; }
+    const bw = ev.target.closest("#b-wa");
+    if (bw) { evento("share", "whatsapp"); window.open("https://wa.me/?text=" + encodeURIComponent(texto() + " " + location.href.split("#")[0]), "_blank", "noopener"); }
+  });
 
   async function compartilhar() {
     const url = location.href, t = texto();
@@ -95,8 +100,8 @@
     return new Promise((ok) => cv.toBlob(ok, "image/png"));
   }
 
-  async function story() {
-    const b = $("#b-story"); const rot = b.innerHTML; b.disabled = true; b.textContent = "gerando imagem…";
+  async function story(b) {
+    b = b || $("#b-story"); const rot = b.innerHTML; b.disabled = true; b.textContent = "gerando imagem…";
     try {
       const d = StoryDados();
       const blob = await desenhar(d);
@@ -127,5 +132,5 @@
   }
 
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", montar); else montar();
-  window.Compartilhar = { montar };
+  window.Compartilhar = { montar, story, botoes, ICO_IG };
 })();
