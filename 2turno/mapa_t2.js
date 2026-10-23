@@ -308,6 +308,7 @@
     return {
       selo: E.turno === 1 ? "1º TURNO 2026" : "2º TURNO · AO VIVO", titulo, sub: `${cargo} · ${turno}`, linhas, svg: document.querySelector("#mapa svg"), arquivo: arq,
       rodape: E.nivel === "BR" ? "Veja o seu estado e a sua cidade:" : "Veja a sua cidade no mapa:",
+      proj: E.nivel === "BR" && E.turno === 2 && E.corrida.cargo === 1 && window.T2 && T2.projResumo ? T2.projResumo() : null,
       textoCompartilhar: lider ? `${titulo}: ${lider.nome} ${(lider.pct * 100).toLocaleString("pt-BR", { maximumFractionDigits: 1 })}% para ${cargo.toLowerCase()} (${E.turno}º turno), no mapa do Radar Numérico` : document.title,
     };
   };

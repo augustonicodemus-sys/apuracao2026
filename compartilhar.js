@@ -71,7 +71,8 @@
     ctx.fillStyle = "#fff"; caber(ctx, d.titulo, W - 144, 800, 96, 52); ctx.fillText(d.titulo, 72, 250);
     ctx.fillStyle = CINZA; caber(ctx, d.sub, W - 144, 500, 40, 26); ctx.fillText(d.sub, 72, 330);
     // mapa num cartão claro
-    const mx = 72, my = 390, mw = W - 144, mh = 820;
+    const pj = d.proj && d.proj.lados && d.proj.lados.length === 2 ? d.proj : null; // projeção do 2º turno (23/10)
+    const mx = 72, my = 390, mw = W - 144, mh = pj ? 690 : 820;
     ctx.fillStyle = "#F2F4F7"; rr(ctx, mx, my, mw, mh, 28); ctx.fill();
     if (d.svg) {
       try {
@@ -91,6 +92,18 @@
       ctx.fillStyle = cor; ctx.font = "800 92px Archivo, system-ui, sans-serif"; ctx.textAlign = "right";
       ctx.fillText((l.pct * 100).toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + "%", W - 72, y + 6);
       ctx.textAlign = "left"; y += 132;
+    }
+    if (pj) { // quadro da projeção: hora, % apurado e os dois lados com a chance de vencer
+      const by = y - 52, bh = 206, fmt1 = (v) => (+v).toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + "%";
+      const ch = (p) => p >= 0.995 ? ">99%" : p <= 0.005 ? "<1%" : Math.round(p * 100) + "%";
+      ctx.fillStyle = "rgba(255,255,255,0.09)"; rr(ctx, 72, by, W - 144, bh, 24); ctx.fill();
+      ctx.fillStyle = AMAR; caber(ctx, "PROJEÇÃO DO RADAR NUMÉRICO · " + pj.hora, W - 208, 700, 32, 24); ctx.fillText("PROJEÇÃO DO RADAR NUMÉRICO · " + pj.hora, 104, by + 44);
+      ctx.fillStyle = CINZA; const t2 = fmt1(pj.pct) + " do eleitorado apurado · estimativa, não é o resultado oficial"; caber(ctx, t2, W - 208, 500, 28, 20); ctx.fillText(t2, 104, by + 84);
+      pj.lados.forEach((l, i) => {
+        const x = i ? W / 2 + 8 : 104, cor = claro(l.cor);
+        ctx.fillStyle = cor; caber(ctx, l.nome + " " + fmt1(l.proj), W / 2 - 120, 800, 46, 30); ctx.fillText(l.nome + " " + fmt1(l.proj), x, by + 136);
+        ctx.fillStyle = "#fff"; ctx.font = "500 30px Archivo, system-ui, sans-serif"; ctx.fillText("chance de vencer: " + ch(l.prob), x, by + 180);
+      });
     }
     // rodapé
     const fy = H - 230;

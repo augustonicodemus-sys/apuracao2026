@@ -36,6 +36,63 @@
   const simAtivo = !!(S && S.ativo);
   const simQ = simAtivo ? "?sim=" + S.pct : "";
 
+  // ------------------------------------------------------------ projeção do resultado final (23/10)
+  // O modelo roda no computador do Radar durante a apuração e publica um arquivo pequeno em /projecao/ (repositório "projecao").
+  // ?proj=teste lê t2-teste.json e ?proj=secao lê t2-secao.json (para testar outro modelo numa URL escondida).
+  // O próprio arquivo diz qual modelo é ("nome") e pode pedir que as páginas abertas recarreguem ("min_v").
+  const PROJ_V = 1;
+  const projQ = new URLSearchParams(location.search).get("proj");
+  const PROJ_URL = simAtivo ? "../teste/projecao_t2_exemplo.json" : "/projecao/" + ({ teste: "t2-teste", secao: "t2-secao" }[projQ] || "t2") + ".json";
+  let PROJ = null;
+  async function carregarProj() {
+    if (!simAtivo && !projQ && Date.now() < VIGIA) return; // antes da apuração o arquivo não existe
+    try {
+      const r = await fetch(PROJ_URL + (PROJ_URL.includes("?") ? "&" : "?") + "t=" + Date.now(), { cache: "no-store" });
+      if (!r.ok) { if (r.status === 404) PROJ = null; return; }
+      const j = await r.json();
+      if (j && j.min_v > PROJ_V) {
+        try { if (!sessionStorage.getItem("rn-proj-v" + j.min_v)) { sessionStorage.setItem("rn-proj-v" + j.min_v, "1"); location.reload(); return; } } catch (e) {}
+      }
+      PROJ = j && j.cand ? j : null;
+    } catch (e) { /* mantém a última projeção lida */ }
+  }
+  // projeção válida para mostrar: Presidente, 2º turno, arquivo recente (até 25 min) e apuração ainda não encerrada
+  function projAtual(c, a) {
+    const P = PROJ;
+    if (!P || !c || c.cargo !== 1 || !P.cand || !c.nums.every((n) => P.cand[n])) return null;
+    if (!simAtivo && !projQ && (Date.now() / 1000 - (P.ts || 0)) > 25 * 60) return null;
+    if (a && a.terminou) return null;
+    return P;
+  }
+  const pctP = (v, d = 1) => (+v).toLocaleString("pt-BR", { minimumFractionDigits: d, maximumFractionDigits: d }) + "%";
+  const chance = (p) => p >= 0.995 ? "mais de 99%" : p <= 0.005 ? "menos de 1%" : Math.round(p * 100) + "%";
+  const chanceCurta = (p) => p >= 0.995 ? ">99%" : p <= 0.005 ? "<1%" : Math.round(p * 100) + "%";
+  const horaP = (h) => String(h || "").replace(":", "h");
+  function projHtml(c, turno, a) {
+    const P = turno === 2 ? projAtual(c, a) : null;
+    if (!P) return "";
+    const L = c.nums.map((n) => ({ q: quem(c, { numero: n }), x: P.cand[n] }));
+    const prelim = P.pct_eleit < 10;
+    const lado = (l, cls) => `<div class="pj ${cls}"><span class="pj-n">${esc(curtoNome(l.q.nome))}</span><b style="color:${l.q.cor}">${pctP(l.x.proj)}</b><small>faixa de ${pctP(l.x.q5)} a ${pctP(l.x.q95)}</small></div>`;
+    const w = Math.max(0, Math.min(100, L[0].x.prob * 100));
+    const metodo = P.metodo ? ` · <a href="${esc(P.metodo)}">como funciona</a>` : "";
+    return `<div class="proj" aria-live="polite">
+      <div class="proj-cab"><b>Projeção do resultado final</b><span class="tag-p">${prelim ? "preliminar · " : ""}${esc(P.nome || "modelo do Radar Numérico")}</span></div>
+      <div class="proj-lados">${lado(L[0], "pa")}${lado(L[1], "pb")}</div>
+      <div class="proj-ch"><div class="ch-t"><span>Chance de vencer: <b style="color:${L[0].q.cor}">${chance(L[0].x.prob)}</b></span><span><b style="color:${L[1].q.cor}">${chance(L[1].x.prob)}</b></span></div>
+        <div class="ch-barra" role="img" aria-label="Chance de vencer: ${esc(L[0].q.nome)} ${chance(L[0].x.prob)}, ${esc(L[1].q.nome)} ${chance(L[1].x.prob)}"><div style="width:${w.toFixed(1)}%;background:${L[0].q.cor}"></div><div style="width:${(100 - w).toFixed(1)}%;background:${L[1].q.cor}"></div><i class="d-meio"></i></div></div>
+      <p class="proj-rod">Calculada às ${esc(horaP(P.hora))} com ${pctP(P.pct_eleit)} do eleitorado apurado${metodo}. Estimativa estatística do Radar Numérico, não é resultado oficial: o oficial é o do TSE.</p>
+    </div>`;
+  }
+  // para o Story e para o texto do WhatsApp
+  function projResumo(c) {
+    const P = projAtual(c, ultimoD2 ? D.apuracao(ultimoD2) : null);
+    if (!P) return null;
+    const L = c.nums.map((n) => ({ q: quem(c, { numero: n }), x: P.cand[n] })).sort((x, y) => y.x.prob - x.x.prob);
+    return { hora: horaP(P.hora), pct: P.pct_eleit, lados: c.nums.map((n) => ({ nome: curtoNome(quem(c, { numero: n }).nome), cor: quem(c, { numero: n }).cor, proj: P.cand[n].proj, prob: P.cand[n].prob })),
+      texto: `Projeção do Radar Numérico (${horaP(P.hora)}): ${L[0].q.nome} ${pctP(L[0].x.proj)}, chance de vencer ${chanceCurta(L[0].x.prob)}` };
+  }
+
   // nome, partido e cor de um candidato (finalista conhecido, ou o que vier do TSE)
   function quem(corrida, c) {
     const f = corrida.fin[String(c.numero)];
@@ -161,9 +218,11 @@
     const uf = CFG.pagina === "presidente" ? "BR" : CFG.uf, corrida = CORRIDAS[uf], ab = uf;
     status("atualizando…", "busy");
     try {
+      const pj = uf === "BR" ? carregarProj() : null;
       const [d1, d2] = await Promise.all([turno1(corrida, ab), seguro(turno2(corrida, ab))]);
       let ufs = null;
       if (uf === "BR") ufs = await Promise.all(T.UFS.map(async (u) => ({ u, d1: await seguro(turno1(corrida, u)), d2: await seguro(turno2(corrida, u)) })));
+      await pj;
       ultimo = { corrida, d1, d2, ufs };
       renderDisputa(ultimo);
       status(d2 ? `TSE: ${d2.hora.trim()} · atualizado ${new Date().toLocaleTimeString("pt-BR")}` : `1º turno: dados finais do TSE · arquivo do 2º turno ainda não publicado pelo TSE para ${corrida.nome}`, "");
@@ -225,9 +284,10 @@
     status("atualizando…", "busy");
     try {
       const [res, ufs] = await Promise.all([
+        carregarProj().then(() => null),
         Promise.all(Object.entries(CORRIDAS).map(async ([uf, c]) => ({ uf, c, d1: await seguro(turno1(c, uf)), d2: await seguro(turno2(c, uf)) }))),
         Promise.all(T.UFS.map(async (u) => ({ u, d1: await seguro(turno1(CORRIDAS.BR, u)), d2: await seguro(turno2(CORRIDAS.BR, u)) }))),
-      ]);
+      ]).then(([, r, u]) => [r, u]);
       const br = res.find((r) => r.uf === "BR"), a = br.d2 ? D.apuracao(br.d2) : { iniciou: false };
       if (window.MapaT2) MapaT2.atualizar({ corrida: CORRIDAS.BR, uf: "BR", ufs, aoVivo: !!a.iniciou, horaEstado: br.d2 && a.iniciou ? br.d2.hora.trim() : "", total: { d1: br.d1, d2: br.d2 } });
       renderPainel(res);
@@ -274,7 +334,7 @@
   function textoDoCartao(c, n, turno) {
     const [A, B] = n.lado, cargo = c.cargo === 1 ? "Presidente" : "Governador " + String(c.titulo || "").split("· ").pop();
     if (turno === 1) return `${cargo} 2026, 1º turno: ${A.q.nome} ${pct(A.p)} × ${B.q.nome} ${pct(B.p)}. Veja o mapa por cidade no Radar Numérico`;
-    if (A.p || B.p) return `Apuração ${cargo} 2026 ao vivo: ${A.q.nome} ${pct(A.p)} × ${B.q.nome} ${pct(B.p)}`;
+    if (A.p || B.p) { const pr = projResumo(c); return `Apuração ${cargo} 2026 ao vivo: ${A.q.nome} ${pct(A.p)} × ${B.q.nome} ${pct(B.p)}` + (pr ? `. ${pr.texto}` : ""); }
     return `${cargo} 2026: ${A.q.nome} × ${B.q.nome} no 2º turno, dia 25/10. Acompanhe a apuração ao vivo no Radar Numérico`;
   }
   document.addEventListener("click", async (ev) => {
@@ -301,7 +361,7 @@
     const pessoa = (L, cls) => `<div class="pp ${cls}">${foto(L.q)}<div class="pp-t"><span class="pp-n">${esc(L.q.nome)} <small>${esc(L.q.partido)}</small></span><b class="pp-p" style="color:${L.q.cor}">${pct(L.p)}</b></div></div>`;
     return `<div class="cartao grande pres">${abre}${cab}
       <div class="pres-lados">${pessoa(n.lado[0], "pa")}<span class="pres-x" aria-hidden="true">×</span>${pessoa(n.lado[1], "pb")}</div>${barra(n.lado)}
-      ${n.rod ? `<p class="rod">${n.rod}</p>` : ""}${fecha}${barraShare()}</div>`;
+      ${n.rod ? `<p class="rod">${n.rod}</p>` : ""}${fecha}${projHtml(c, turno, d2 ? D.apuracao(d2) : null)}${barraShare()}</div>`;
   }
   let ultimoPainel = null;
   function renderPainel(res) {
@@ -345,6 +405,6 @@
     document.addEventListener("click", (ev) => { if (ev.target.closest("#atualizar")) { ev.preventDefault(); fn(); } });
     fn();
   }
-  window.T2 = { CORRIDAS, GOV };
+  window.T2 = { CORRIDAS, GOV, projResumo: () => projResumo(CORRIDAS.BR) };
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init); else init();
 })();
